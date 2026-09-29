@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://taskya.in/sitemap.xml
