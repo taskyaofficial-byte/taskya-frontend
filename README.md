@@ -1,20 +1,47 @@
-# Taskya AI Frontend V1.4
+# Taskya AI V1.5
+A substantially upgraded India-first autonomous AI agent core.
 
-Clean, responsive static frontend for taskya.in. Configure `config.js` before deployment.
+## Included
+- Groq tool-calling ReAct loop + Tavily live search
+- Playwright browser: DOM text + screenshot + inspect/click/fill
+- Docker Python sandbox: no network + resource limits
+- PDF/Excel/CSV/text intelligence
+- Artifact/workspace tools
+- Live SSE task progress + cancellation
+- Human approval gate + resume
+- Browser speech-to-text + speech synthesis
+- Hindi/Hinglish/English/regional selector
+- File upload
 
-1. `API_BASE_URL` → your Render backend. Frontend calls `POST /api/chat` with `{message, web_search, style, model}`.
-2. Supabase Auth placeholders are included. Add only the public project URL + anon key; never expose service-role secrets.
-3. Razorpay/PayPal placeholders are included but intentionally inactive. Real checkout/order creation should be server-side.
-4. Privacy, Terms, Refund and Contact links are present in the sidebar/footer. The policy text is starter text and should be finalized before launch.
-5. Guest limit is UI-only in this frontend. Enforce quotas and entitlements on the backend.
-6. Deploy to Vercel/Netlify and connect `taskya.in`.
+## Run on laptop
+1. Install Python 3.11+ and Docker Desktop.
+2. Copy `.env.example` to `.env`; add Groq/Tavily keys.
+3. `python -m venv .venv` then activate it.
+4. `pip install -r backend/requirements.txt`
+5. `python -m playwright install chromium`
+6. `uvicorn backend.app.main:app --reload --port 8000`
+7. Open `frontend/index.html`.
 
-## V1.4 UI polish
-- Reduced hero/logo sizing for a cleaner first viewport
-- Removed duplicate large task cards; homepage uses one compact starter-chip row/grid
-- Responsive sidebar: permanent on desktop, hamburger slide-out on mobile
-- Mobile-first composer spacing with compact Attach/Web/Voice controls
-- Desktop starter prompts stay horizontal; mobile prompts become a 2×2 grid
-- Taskya Fast v1 / Taskya Pro Agent selector retained and sent to `/api/chat`
-- Thinking shimmer + gradual response typing animation retained
-- Original Taskya branding splash, T mark, favicon and core sections preserved
+## Important
+This is not yet a finished cloud product or proven Manus replacement. Production auth/payment/multi-tenant infrastructure and stronger isolation still require deployment credentials and hardening. Do not claim superiority until benchmarked.
+
+
+### Groq model note
+
+Use `GROQ_MODEL=openai/gpt-oss-120b`. Groq retired `llama-3.3-70b-versatile` for developer/free usage; the agent also contains a runtime fallback to `openai/gpt-oss-20b` so a stale Render environment variable does not immediately break chat.
+
+## Final deployment additions
+- Persistent browser-side recent chat history with backend session history endpoint (`/api/history`).
+- Contact section wired to the configured Zoho mailbox (`TASKYA_CONTACT_EMAIL`).
+- Razorpay checkout wiring: `/api/billing/order` and `/api/billing/verify`. Keep the secret only in Render environment variables.
+- Frontend composer uses file attachment, globe web-search and microphone icons without text labels.
+- Browser voice input/output is enabled where the browser exposes Web Speech API; microphone permission is required.
+
+### Render environment additions
+```text
+GROQ_MODEL=openai/gpt-oss-120b
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=your_razorpay_secret
+TASKYA_CONTACT_EMAIL=info@taskar.in
+```
+Use Razorpay test credentials first. The live gateway is not considered active until real Razorpay credentials are added in Render. The Razorpay secret must never be placed in frontend code.

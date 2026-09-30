@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic>=2
+groq
+tavily-python
+python-multipart
+pypdf
+openpyxl
+pandas
+matplotlib
+reportlab
+passlib[bcrypt]
+playwright
