@@ -723,4 +723,5 @@ function closeMenu() {
 
 function openMenu() {
   $('#side').classList.add('open');
-  $('#mobileShade').classList.add('
+  $('#mobileShade').classList.add('open');
+}
