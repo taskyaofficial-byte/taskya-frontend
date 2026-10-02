@@ -1,7 +1,7 @@
 window.TASKYA_CONFIG={
   API_BASE_URL:'https://taskya-ai-core.onrender.com',
-  SUPABASE_URL:'',
-  SUPABASE_ANON_KEY:'',
+  SUPABASE_URL:'https://tosxrzpaahpjwmicgxec.supabase.co',
+  SUPABASE_ANON_KEY:'sb_publishable_BBlBJHaaJc6MY2TK2RDMgQ_1Fn8TsQb',
   RAZORPAY_KEY_ID:'',
   SUPPORT_EMAIL:'info@taskya.in',
   FREE_TASK_LIMIT:10,
