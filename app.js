@@ -324,11 +324,50 @@ function login(){
  <p id="am"></p>  
  `);  
   
- $('#google').onclick=()=>{  
-  $('#am').textContent=C.SUPABASE_URL?  
-  'Configure Supabase Google provider first.':  
-  'Add Supabase public config in config.js first.'  
- };  
+ $('#google').onclick = async () => {
+  const status = $('#am');
+  const btn = $('#google');
+
+  if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) {
+    status.textContent = 'Supabase URL or public key is missing in config.js.';
+    return;
+  }
+
+  btn.disabled = true;
+  status.textContent = 'Connecting to Google...';
+
+  try {
+    if (!window.supabase) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        script.onload = resolve;
+        script.onerror = () => reject(
+          new Error('Supabase library could not load. Please try again.')
+        );
+        document.head.appendChild(script);
+      });
+    }
+
+    const client = window.supabase.createClient(
+      C.SUPABASE_URL,
+      C.SUPABASE_ANON_KEY
+    );
+
+    const { error } = await client.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+
+    if (error) throw error;
+
+  } catch (e) {
+    status.textContent = e.message || 'Google login failed.';
+    btn.disabled = false;
+  }
+};
   
  ['li','su'].forEach(id=>{  
   $('#'+id).onclick=()=>{  
