@@ -1,26 +1,68 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Taskya AI — Think • Ask • Done"><meta name="theme-color" content="#ffffff">
-<title>Taskya AI — Think • Ask • Done</title><link rel="icon" href="assets/favicon.svg"><link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Taskya AI — Think • Ask • Done">
+<meta name="theme-color" content="#ffffff">
+<title>Taskya AI — Think • Ask • Done</title>
+<link rel="icon" href="assets/favicon.svg">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div id="taskya-splash" aria-label="Taskya AI loading screen"><img src="assets/taskya-splash.png" alt="Taskya AI — Think • Ask • Done"></div>
+<div id="taskya-splash" aria-label="Taskya AI loading screen">
+  <img src="assets/taskya-splash.png" alt="Taskya AI — Think • Ask • Done">
+</div>
+
 <div id="mobileShade" class="mobile-shade"></div>
-<div class="ambient a"></div><div class="ambient b"></div>
+<div class="ambient a"></div>
+<div class="ambient b"></div>
+
 <aside id="side">
-  <div class="brand"><img class="brand-mark" src="assets/taskya-t-mark.png" alt="Taskya AI"><div><b>Taskya AI</b><small>Think • Ask • Done</small></div><button id="sideClose" class="side-close" aria-label="Close menu">×</button></div>
+  <div class="brand">
+    <img class="brand-mark" src="assets/taskya-t-mark.png" alt="Taskya AI">
+    <div><b>Taskya AI</b><small>Think • Ask • Done</small></div>
+    <button id="sideClose" class="side-close" aria-label="Close menu">×</button>
+  </div>
+
   <button id="new" class="new">＋ New Agent Task <kbd>⌘K</kbd></button>
-  <nav><button class="active" data-view="agent">✦ Agent</button><button data-view="computer">⌁ Computer</button><button data-view="artifacts">▣ Artifacts</button><button data-view="customise">◈ Customise</button></nav>
-  <div class="histHead">RECENT TASKS <button id="clear">Clear</button></div><div id="history"></div>
-  <div class="bottom"><div class="plan"><b>● Free workspace</b><small id="usage">3 free tasks available</small><button id="upgrade">Upgrade to Pro →</button></div>
-    <div class="legal"><button data-policy="privacy">Privacy</button>·<button data-policy="terms">Terms</button>·<button data-policy="refund">Refunds</button>·<button data-policy="contact">Contact</button></div>
+
+  <nav>
+    <button class="active" data-view="agent">✦ Agent</button>
+    <button data-view="computer">⌁ Computer</button>
+    <button data-view="artifacts">▣ Artifacts</button>
+    <button data-view="customise">◈ Customise</button>
+  </nav>
+
+  <div class="histHead">RECENT TASKS <button id="clear">Clear</button></div>
+  <div id="history"></div>
+
+  <div class="bottom">
+    <div class="plan">
+      <b>● Free workspace</b>
+      <small id="usage">3 free tasks available</small>
+      <button id="upgrade">Upgrade to Pro →</button>
+    </div>
+    <div class="legal">
+      <button data-policy="privacy">Privacy</button>·
+      <button data-policy="terms">Terms</button>·
+      <button data-policy="refund">Refunds</button>·
+      <button data-policy="contact">Contact</button>
+    </div>
     <button id="login" class="login">◉ Sign in / Log in</button>
   </div>
 </aside>
+
 <main>
-<header><button id="menu" class="mobile" aria-label="Open menu">☰</button><span class="header-brand"><img src="assets/taskya-t-mark.png" alt="Taskya AI"><strong>Taskya AI</strong><i>/</i><em>Agent</em><i>/</i><em id="crumb">New Task</em></span><div><button id="topUpgrade">Upgrade ✦</button><button id="topLogin">◉</button></div></header>
+<header>
+  <button id="menu" class="mobile" aria-label="Open menu">☰</button>
+  <span class="header-brand">
+    <img src="assets/taskya-t-mark.png" alt="Taskya AI">
+    <strong>Taskya AI</strong><i>/</i><em>Agent</em><i>/</i><em id="crumb">New Task</em>
+  </span>
+  <div><button id="topUpgrade">Upgrade ✦</button><button id="topLogin">◉</button></div>
+</header>
+
 <section id="agent" class="view">
   <div id="welcome" class="welcome">
     <small>AUTONOMOUS AI WORKSPACE</small>
@@ -34,20 +76,98 @@
       <button class="prompt-chip" data-p="Research the latest information about my topic and give me a concise sourced report.">Deep research</button>
     </div>
   </div>
+
   <div id="chat" class="chat"></div>
+
   <div class="composer">
-    <div class="composer-top"><div class="composer-brand"><img src="assets/taskya-t-mark.png" alt="Taskya AI"><span>Taskya AI</span></div><div class="composer-controls"><span id="agentState" class="agent-state">Ready</span><span class="model-spark">✦</span><select id="modelSelect" class="model-selector" aria-label="Choose Taskya model"><option value="taskya-fast-v1">Taskya Fast v1</option><option value="taskya-pro-agent">Taskya Pro Agent</option></select></div></div>
+    <div class="composer-top">
+      <div class="composer-brand">
+        <img src="assets/taskya-t-mark.png" alt="Taskya AI"><span>Taskya AI</span>
+      </div>
+      <div class="composer-controls">
+        <span id="agentState" class="agent-state">Ready</span>
+        <span class="model-spark">✦</span>
+        <select id="modelSelect" class="model-selector" aria-label="Choose Taskya model">
+          <option value="taskya-fast-v1">Taskya Fast v1</option>
+          <option value="taskya-pro-agent">Taskya Pro Agent</option>
+        </select>
+      </div>
+    </div>
+
     <div id="file" class="file hidden"></div>
     <textarea id="prompt" placeholder="Ask Taskya anything…" aria-label="Ask Taskya"></textarea>
-    <div class="row"><div><label class="tool" title="Attach file" aria-label="Attach file">＋<input id="upload" type="file" hidden></label><button id="web" class="tool" title="Web search" aria-label="Web search"><span class="tool-icon">⌁</span><span class="tool-text">Web</span></button><button id="voice" class="tool" title="Voice input" aria-label="Voice input"><span class="tool-icon">◉</span><span class="tool-text">Voice</span></button></div><div><span id="mode">Auto</span><button id="send" aria-label="Send">↑</button></div></div>
+
+    <div class="row">
+      <div>
+        <label class="tool" title="Attach file" aria-label="Attach file">
+          <span class="tool-svg" data-icon="paperclip"></span>
+          <input id="upload" type="file" hidden>
+        </label>
+        <button id="web" class="tool" title="Web search" aria-label="Web search">
+          <span class="tool-svg" data-icon="globe"></span>
+        </button>
+        <button id="voice" class="tool" title="Voice input" aria-label="Voice input">
+          <span class="tool-svg" data-icon="mic"></span>
+        </button>
+      </div>
+      <div><span id="mode">Auto</span><button id="send" aria-label="Send">↑</button></div>
+    </div>
   </div>
+
   <div class="note">Taskya can make mistakes. Review important results before acting on them.</div>
 </section>
-<section id="computer" class="view hidden"><div class="title"><small>COMPUTER WORKER</small><h2>Control a task, not a tab.</h2><p>Browser and computer-use capabilities are prepared for backend worker integration.</p></div><div class="cards"><article><strong>⌁</strong><h3>Browser Worker</h3><p>Playwright navigation, DOM inspection, click/fill and screenshots.</p><label>Backend-ready</label></article><article><strong>◫</strong><h3>Computer Use</h3><p>Screen actions with approval gates for consequential operations.</p><label>Safety gate</label></article></div></section>
-<section id="artifacts" class="view hidden"><div class="title"><small>ARTIFACTS</small><h2>Your work, organized.</h2><p>Generated reports, files and structured outputs will appear here.</p></div><div class="empty">▣<h3>No artifacts yet</h3><p>Ask Taskya to create a report, file or structured result.</p></div></section>
-<section id="customise" class="view hidden"><div class="title"><small>CUSTOMISE</small><h2>Make Taskya work your way.</h2></div><div class="settings"><div><b>Response style</b><select><option>Balanced</option><option>Concise</option><option>Detailed</option><option>Executive</option></select></div><div><b>Web research</b><input id="web2" type="checkbox"></div><div><b>Confirm risky actions</b><input type="checkbox" checked disabled></div></div></section>
-<footer><button data-policy="privacy">Privacy</button><button data-policy="terms">Terms</button><button data-policy="refund">Refunds</button><button data-policy="contact">Contact</button></footer>
+
+<section id="computer" class="view hidden">
+  <div class="title">
+    <small>COMPUTER WORKER</small>
+    <h2>Control a task, not a tab.</h2>
+    <p>Browser and computer-use capabilities are prepared for backend worker integration.</p>
+  </div>
+  <div class="cards">
+    <article><strong>⌁</strong><h3>Browser Worker</h3><p>Playwright navigation, DOM inspection, click/fill and screenshots.</p><label>Backend-ready</label></article>
+    <article><strong>◫</strong><h3>Computer Use</h3><p>Screen actions with approval gates for consequential operations.</p><label>Safety gate</label></article>
+  </div>
+</section>
+
+<section id="artifacts" class="view hidden">
+  <div class="title">
+    <small>ARTIFACTS</small><h2>Your work, organized.</h2>
+    <p>Generated reports, files and structured outputs will appear here.</p>
+  </div>
+  <div class="empty">▣<h3>No artifacts yet</h3><p>Ask Taskya to create a report, file or structured result.</p></div>
+</section>
+
+<section id="customise" class="view hidden">
+  <div class="title"><small>CUSTOMISE</small><h2>Make Taskya work your way.</h2></div>
+  <div class="settings">
+    <div>
+      <b>Response style</b>
+      <select id="styleSelect">
+        <option>Balanced</option>
+        <option>Concise</option>
+        <option>Detailed</option>
+        <option>Executive</option>
+      </select>
+    </div>
+    <div><b>Web research</b><input id="web2" type="checkbox"></div>
+    <div><b>Confirm risky actions</b><input type="checkbox" checked disabled></div>
+  </div>
+</section>
+
+<footer>
+  <button data-policy="privacy">Privacy</button>
+  <button data-policy="terms">Terms</button>
+  <button data-policy="refund">Refunds</button>
+  <button data-policy="contact">Contact</button>
+</footer>
 </main>
-<div id="modal" class="modal hidden"><div class="shade"></div><div class="box"><button class="x">×</button><div id="modalBody"></div></div></div>
-<script src="config.js"></script><script src="app.js"></script>
-</body></html>
+
+<div id="modal" class="modal hidden">
+  <div class="shade"></div>
+  <div class="box"><button class="x" aria-label="Close">×</button><div id="modalBody"></div></div>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
