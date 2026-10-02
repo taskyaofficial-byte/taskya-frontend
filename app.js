@@ -3,8 +3,7 @@
 const C=window.TASKYA_CONFIG||{},
 $=s=>document.querySelector(s),
 
-\[
-=s=>[...document.querySelectorAll(s)],  
+$$=s=>[...document.querySelectorAll(s)], 
 S={  
  web:false,  
  used:+localStorage.taskya_used||0,  
