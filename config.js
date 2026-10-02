@@ -1,1 +1,1 @@
-window.TASKYA_CONFIG={API_BASE_URL:'https://taskya-ai-core.onrender.com',SUPABASE_URL:'',SUPABASE_ANON_KEY:'',RAZORPAY_KEY_ID:''};
+window.TASKYA_CONFIG={API_BASE_URL:'https://taskya-ai-core.onrender.com',SUPABASE_URL:'https://tosxrzpaahpjwmicgxec.supabase.co/rest/v1/',SUPABASE_ANON_KEY:'sb_publishable_BBlBJHaaJc6MY2TK2RDMgQ_1Fn8TsQb',RAZORPAY_KEY_ID:''};
