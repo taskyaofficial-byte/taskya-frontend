@@ -349,7 +349,7 @@ function login(){
  <p id="am"></p>  
  `);  
   
- $('#google').onclick = async () => {
+$('#google').onclick = async () => {
   const status = $('#am');
   const btn = $('#google');
 
@@ -362,7 +362,7 @@ function login(){
   status.textContent = 'Connecting to Google...';
 
   try {
-    if (!window.supabase) {
+    if (!window.supabase?.createClient) {
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
@@ -374,7 +374,14 @@ function login(){
       });
     }
 
-    const client = supabaseClient;
+    if (!window.supabase?.createClient) {
+      throw new Error('Supabase library did not initialize. Please refresh and try again.');
+    }
+
+    const client = window.supabase.createClient(
+      C.SUPABASE_URL,
+      C.SUPABASE_ANON_KEY
+    );
 
     const { error } = await client.auth.signInWithOAuth({
       provider: 'google',
