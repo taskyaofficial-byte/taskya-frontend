@@ -10,8 +10,27 @@ S={
  user:null,  
  model:localStorage.taskya_model||'taskya-fast-v1'  
 };  
-  
-const modal=(html)=>{  
+  let supabaseClient = null;
+
+async function initAuth() {
+  if (!window.supabase || !C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) return;
+
+  supabaseClient = window.supabase.createClient(
+    C.SUPABASE_URL,
+    C.SUPABASE_ANON_KEY
+  );
+
+  const { data } = await supabaseClient.auth.getSession();
+  S.user = data.session ? data.session.user : null;
+  usage();
+ supabaseClient.auth.onAuthStateChange((event, session) => {
+  S.user = session ? session.user : null;
+  usage();
+});
+}
+initAuth();
+
+const modal=(html)=>{
  $('#modalBody').innerHTML=html;  
  $('#modal').classList.remove('hidden')  
 };  
@@ -355,10 +374,7 @@ function login(){
       });
     }
 
-    const client = window.supabase.createClient(
-      C.SUPABASE_URL,
-      C.SUPABASE_ANON_KEY
-    );
+    const client = supabaseClient;
 
     const { error } = await client.auth.signInWithOAuth({
       provider: 'google',
