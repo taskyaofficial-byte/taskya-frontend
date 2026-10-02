@@ -19,7 +19,114 @@ function thinking(el){el.querySelector('.bubble').innerHTML='<span class="shimme
 function typeText(el,text){return new Promise(resolve=>{let b=el.querySelector('.bubble'),i=0;b.textContent='';let cursor=document.createElement('span');cursor.className='typing-cursor';b.append(cursor);const step=()=>{if(i<text.length){cursor.before(document.createTextNode(text.slice(i,i+Math.max(1,Math.min(3,text.length-i)))));i=Math.min(text.length,i+3);setTimeout(step,8)}else{cursor.remove();resolve()}};step()})}
 async function uploadFile(file){$('#file').classList.remove('hidden');$('#file').textContent='Uploading '+file.name+'…';let fd=new FormData();fd.append('file',file);let r=await fetch(API+'/api/upload',{method:'POST',body:fd});if(!r.ok)throw Error('Upload failed: '+r.status);let d=await r.json();S.attached=d.filename;$('#file').textContent='📎 '+d.filename;}
 async function send(){let p=$('#prompt').value.trim();if(!p||$('#send').disabled)return;if(!S.user&&S.used>=(C.FREE_TASK_LIMIT||3)){login();return}if(!S.chatId)newChat();$('#prompt').value='';$('#prompt').style.height='auto';$('#send').disabled=true;let userText=S.attached?`${p}\n\n[Attached file: ${S.attached}. Use the file inspection tool on this filename when the task requires reading it.]`:p;S.messages.push({role:'user',text:userText,ts:Date.now()});msg('user',userText);saveCurrent();let a=msg('ai','');thinking(a);try{let r=await fetch(API+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:userText,web_enabled:S.web,language:'auto'})});if(!r.ok)throw Error('Backend '+r.status);let d=await r.json();let answer=d.response||d.answer||d.message||'Task completed.';await typeText(a,answer);S.messages.push({role:'ai',text:answer,ts:Date.now()});saveCurrent();S.used++;localStorage.taskya_used=S.used;usage();$('#agentState').textContent='Done';$('#agentState').className='agent-state done';S.attached=null;$('#file').classList.add('hidden');$('#file').textContent=''}catch(e){let answer='Backend connection problem. Check your Render deployment and API URL.';await typeText(a,answer);S.messages.push({role:'ai',text:answer,ts:Date.now()});saveCurrent();$('#agentState').textContent='Ready';$('#agentState').className='agent-state'}finally{$('#send').disabled=false}}
-function login(){modal(`<small>WELCOME TO TASKYA</small><h2>Sign in to continue</h2><p>Account sync is prepared. Add Supabase public configuration in config.js when you want cloud login and cross-device history.</p><button class="google" id="google">G &nbsp; Continue with Google</button><p>Or use email</p><input id="em" type="email" placeholder="Email address"><input id="pw" type="password" placeholder="Password"><div class="authgrid"><button id="li">Log in</button><button id="su">Create account</button></div><p id="am"></p>`);$('#google').onclick=()=>$('#am').textContent=C.SUPABASE_URL?'Supabase provider can be connected next.':'Add Supabase public URL and anon key in config.js first.';['li','su'].forEach(id=>$('#'+id).onclick=()=>$('#am').textContent='Cloud authentication is not enabled until Supabase public settings are added.')}
+async function login(){
+  modal(`<small>WELCOME TO TASKYA</small>
+  <h2>Sign in to continue</h2>
+  <p>Sign in securely to sync your Taskya account.</p>
+  <button class="google" id="google">G &nbsp; Continue with Google</button>
+  <p>Or use email</p>
+  <input id="em" type="email" placeholder="Email address">
+  <input id="pw" type="password" placeholder="Password">
+  <div class="authgrid">
+    <button id="li">Log in</button>
+    <button id="su">Create account</button>
+  </div>
+  <p id="am"></p>`);
+
+  const msg = text => {
+    const el = $('#am');
+    if(el) el.textContent = text;
+  };
+
+  async function getSupabase(){
+    if(!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY){
+      throw new Error('Supabase URL or Publishable Key is missing in config.js.');
+    }
+
+    if(!window.supabase){
+      await new Promise((resolve,reject)=>{
+        const script=document.createElement('script');
+        script.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        script.onload=resolve;
+        script.onerror=()=>reject(new Error('Supabase library could not load. Please check your internet connection.'));
+        document.head.appendChild(script);
+      });
+    }
+
+    if(!window.taskyaSupabase){
+      window.taskyaSupabase=window.supabase.createClient(
+        C.SUPABASE_URL,
+        C.SUPABASE_ANON_KEY
+      );
+    }
+
+    return window.taskyaSupabase;
+  }
+
+  $('#google').onclick=async()=>{
+    const btn=$('#google');
+    btn.disabled=true;
+    msg('Connecting to Google...');
+
+    try{
+      const sb=await getSupabase();
+      const {error}=await sb.auth.signInWithOAuth({
+        provider:'google',
+        options:{redirectTo:window.location.origin}
+      });
+      if(error) throw error;
+    }catch(e){
+      msg(e.message || 'Google sign-in failed. Please try again.');
+      btn.disabled=false;
+    }
+  };
+
+  $('#li').onclick=async()=>{
+    const email=$('#em').value.trim();
+    const password=$('#pw').value;
+
+    if(!email || !password){
+      msg('Enter your email and password.');
+      return;
+    }
+
+    try{
+      const sb=await getSupabase();
+      const {data,error}=await sb.auth.signInWithPassword({email,password});
+      if(error) throw error;
+      S.user=data.user;
+      msg('Login successful. You can close this window.');
+    }catch(e){
+      msg(e.message || 'Login failed.');
+    }
+  };
+
+  $('#su').onclick=async()=>{
+    const email=$('#em').value.trim();
+    const password=$('#pw').value;
+
+    if(!email || !password){
+      msg('Enter your email and password.');
+      return;
+    }
+
+    if(password.length<6){
+      msg('Password must contain at least 6 characters.');
+      return;
+    }
+
+    try{
+      const sb=await getSupabase();
+      const {data,error}=await sb.auth.signUp({email,password});
+      if(error) throw error;
+      msg(data.session
+        ? 'Account created successfully.'
+        : 'Check your email to confirm your account.');
+    }catch(e){
+      msg(e.message || 'Account creation failed.');
+    }
+  };
+}
 function pay(){modal(`<small>TASKYA PRO</small><h2>Upgrade for ₹${C.PRO_PRICE_INR||19}</h2><p>Secure Razorpay checkout. The backend must have Razorpay credentials configured.</p><button class="primary" id="payNow">Pay ₹${C.PRO_PRICE_INR||19}</button><p id="payMsg"></p>`);$('#payNow').onclick=async()=>{let m=$('#payMsg');try{let r=await fetch(API+'/api/billing/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount_inr:C.PRO_PRICE_INR||19})});let d=await r.json();if(!r.ok)throw Error(d.detail||'Payment setup failed');if(!window.Razorpay){let s=document.createElement('script');s.src='https://checkout.razorpay.com/v1/checkout.js';s.onload=()=>openRazor(d);document.head.append(s)}else openRazor(d)}catch(e){m.textContent=e.message+' — Render environment में Razorpay keys डालें.'}}}
 function openRazor(d){let r=new Razorpay({key:d.key_id,amount:d.amount,currency:d.currency,name:'Taskya AI',description:'Taskya AI Pro',order_id:d.order_id,handler:async resp=>{let v=await fetch(API+'/api/billing/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(resp)});if(v.ok){localStorage.taskya_pro='1';modal('<small>TASKYA PRO</small><h2>Payment successful</h2><p>Your payment was verified by Taskya.</p>')}else modal('<small>TASKYA PRO</small><h2>Verification failed</h2><p>Please contact support at '+esc(C.SUPPORT_EMAIL)+'</p>')}});r.open()}
 function policy(t){let c={privacy:['Privacy Policy','Taskya may process account information, prompts, files, usage data and technical logs to provide and secure the service. Replace this starter text with your finalized policy before launch.'],terms:['Terms of Service','Use Taskya only for lawful purposes. AI output may contain errors and should be reviewed before important actions.'],refund:['Refund & Cancellation Policy','Refund and cancellation terms should be finalized before launch. For support contact '+C.SUPPORT_EMAIL+'.'],contact:['Contact Taskya',`Support email: <a href="mailto:${C.SUPPORT_EMAIL}">${C.SUPPORT_EMAIL}</a><br><br>Website: taskya.in`]}[t]||[];modal(`<small>LEGAL & SUPPORT</small><h2>${c[0]}</h2><p>${c[1]}</p>`)}
