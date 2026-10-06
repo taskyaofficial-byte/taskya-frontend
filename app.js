@@ -13,21 +13,66 @@ S={
   let supabaseClient = null;
 
 async function initAuth() {
-  if (!window.supabase || !C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) return;
+  if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) return;
 
-  supabaseClient = window.supabase.createClient(
-    C.SUPABASE_URL,
-    C.SUPABASE_ANON_KEY
-  );
+  try {
+    if (!window.supabase?.createClient) {
+      await new Promise((resolve, reject) => {
+        const existing = document.querySelector(
+          'script[src*="supabase-js"]'
+        );
 
-  const { data } = await supabaseClient.auth.getSession();
-  S.user = data.session ? data.session.user : null;
-  usage();
- supabaseClient.auth.onAuthStateChange((event, session) => {
-  S.user = session ? session.user : null;
-  usage();
-});
+        if (existing) {
+          existing.addEventListener('load', resolve, { once: true });
+          existing.addEventListener('error', reject, { once: true });
+          return;
+        }
+
+        const script = document.createElement('script');
+
+        script.src =
+          'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+
+        script.onload = resolve;
+
+        script.onerror = () =>
+          reject(
+            new Error('Supabase library could not load.')
+          );
+
+        document.head.appendChild(script);
+      });
+    }
+
+    if (!window.supabase?.createClient) {
+      throw new Error('Supabase library did not initialize.');
+    }
+
+    supabaseClient = window.supabase.createClient(
+      C.SUPABASE_URL,
+      C.SUPABASE_ANON_KEY
+    );
+
+    const { data } = await supabaseClient.auth.getSession();
+
+    S.user = data.session ? data.session.user : null;
+
+    usage();
+
+    supabaseClient.auth.onAuthStateChange(
+      (event, session) => {
+        S.user = session ? session.user : null;
+        usage();
+      }
+    );
+
+  } catch (e) {
+    console.error('Taskya Auth Error:', e);
+    S.user = null;
+    usage();
+  }
 }
+
 initAuth();
 
 const modal=(html)=>{
