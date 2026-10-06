@@ -365,25 +365,38 @@ $('#google').onclick = async () => {
     if (!window.supabase?.createClient) {
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
+
         script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+
         script.onload = resolve;
-        script.onerror = () => reject(
-          new Error('Supabase library could not load. Please try again.')
-        );
+
+        script.onerror = () =>
+          reject(
+            new Error('Supabase library could not load. Please try again.')
+          );
+
         document.head.appendChild(script);
       });
     }
 
     if (!window.supabase?.createClient) {
-      throw new Error('Supabase library did not initialize. Please refresh and try again.');
+      throw new Error(
+        'Supabase library did not initialize. Please refresh and try again.'
+      );
     }
 
-    const client = window.supabase.createClient(
-      C.SUPABASE_URL,
-      C.SUPABASE_ANON_KEY
-    );
+    /*
+     * Use the same Supabase client used by initAuth().
+     * This keeps the Google session connected to S.user.
+     */
+    if (!supabaseClient) {
+      supabaseClient = window.supabase.createClient(
+        C.SUPABASE_URL,
+        C.SUPABASE_ANON_KEY
+      );
+    }
 
-    const { error } = await client.auth.signInWithOAuth({
+    const { error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin
