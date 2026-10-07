@@ -245,14 +245,40 @@ function typeText(el,text){
   
  })  
 }  
-  
+ function taskProgressShow(){
+  const box=document.getElementById('taskProgress');
+  if(!box)return;
+  box.hidden=false;
+
+  document.querySelectorAll('#taskProgress .task-step').forEach(step=>{
+    step.classList.remove('active','completed');
+  });
+}
+
+function taskProgressStep(name){
+  const steps=['planning','researching','tools','files','analyzing','verifying','delivering'];
+  const current=steps.indexOf(name);
+  if(current<0)return;
+
+  document.querySelectorAll('#taskProgress .task-step').forEach(step=>{
+    const index=steps.indexOf(step.dataset.step);
+    step.classList.toggle('completed',index<current);
+    step.classList.toggle('active',index===current);
+  });
+}
+
+function taskProgressHide(){
+  const box=document.getElementById('taskProgress');
+  if(!box)return;
+  box.hidden=true;
+} 
 async function send(){  
   
  let p=$('#prompt').value.trim();  
   
  if(!p||$('#send').disabled)return;  
   
- if(!S.user&&S.used>=(C.FREE_TASK_LIMIT||3)){  
+ if(!S.user&&S.used>=(C.FREE_TASK_LIMIT||5)){  
   login();  
   return  
  }  
