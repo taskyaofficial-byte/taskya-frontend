@@ -74,7 +74,47 @@
       <button class="prompt-chip" data-p="Research the latest information about my topic and give me a concise sourced report.">Deep research</button>  
     </div>  
   </div>  
-  <div id="chat" class="chat"></div>  
+  <div id="chat" class="chat"></div> 
+  <div id="taskProgress" class="task-progress" hidden>
+  <div class="task-progress-title">Task Progress</div>
+
+  <div class="task-progress-steps">
+    <div class="task-step" data-step="planning">
+      <span>🧠</span>
+      <span>Planning</span>
+    </div>
+
+    <div class="task-step" data-step="researching">
+      <span>🔎</span>
+      <span>Researching</span>
+    </div>
+
+    <div class="task-step" data-step="tools">
+      <span>🔧</span>
+      <span>Using tools</span>
+    </div>
+
+    <div class="task-step" data-step="files">
+      <span>📄</span>
+      <span>Creating files</span>
+    </div>
+
+    <div class="task-step" data-step="analyzing">
+      <span>📊</span>
+      <span>Analyzing</span>
+    </div>
+
+    <div class="task-step" data-step="verifying">
+      <span>✅</span>
+      <span>Verifying</span>
+    </div>
+
+    <div class="task-step" data-step="delivering">
+      <span>📦</span>
+      <span>Delivering</span>
+    </div>
+  </div>
+</div>
   <div class="composer">  
     <div class="composer-top"><div class="composer-brand"><img src="assets/taskya-t-mark.png" alt="Taskya AI"><span>Taskya AI</span></div><div class="composer-controls"><span id="agentState" class="agent-state">Ready</span><span class="model-spark">✦</span><select id="modelSelect" class="model-selector" aria-label="Choose Taskya model"><option value="taskya-fast-v1">Taskya Fast v1</option><option value="taskya-pro-agent">Taskya Pro Agent</option></select></div></div>  
     <div id="file" class="file hidden"></div>  
