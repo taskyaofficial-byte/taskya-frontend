@@ -139,3 +139,94 @@ main{margin-left:274px;height:100vh;min-width:0;background:var(--bg)}header{heig
 }
 
 @media(prefers-color-scheme:dark){:root{--bg:#18181b;--panel:#202023;--panel-soft:#242428;--line:#303037;--line-strong:#3a3a42;--text:#f4f4f5;--muted:#a1a1aa;--subtle:#71717a;--p:#3b82f6;--p-soft:#172554;--p-border:#1d4ed8;--shadow:0 8px 30px rgba(0,0,0,.18);--shadow-lg:0 18px 55px rgba(0,0,0,.28)}html,body,main{background:var(--bg)}#side,header{background:rgba(24,24,27,.96)}header button,.composer,.bubble,.cards article,.settings>div,.empty,.box,.box input,.authgrid button,.model-selector,.prompt-chip{background:#202023;color:var(--text)}.brand b,.header-brand strong,.welcome h1,.title h2,.empty h3{color:var(--text)}.brand small,.welcome>p,.title p,.cards p,.history-item,.tool,.composer-brand,.row span{color:#a1a1aa}.welcome h1 span{color:#60a5fa}.new{background:#2563eb}.new:hover{background:#3b82f6}.starter-chips .prompt-chip:hover,.tool:hover,.history-item:hover,.authgrid button:hover{background:#27272a}.user .bubble{background:#172554;border-color:#1e3a8a}.ai:before{background:#172554;border-color:#1e3a8a;color:#60a5fa}.plan{background:#202023}.plan button,.google{background:#f4f4f5;color:#18181b}.legal button,footer button{color:#a1a1aa}.note,.chips-label,.agent-state{color:#71717a}.prompt-chip{border-color:#3f3f46}.prompt-chip:hover{background:#172554;color:#93c5fd;border-color:#1d4ed8}.composer:focus-within{border-color:#52525b}.settings select{background:#202023;color:#f4f4f5}.shade{background:rgba(0,0,0,.58)}}
+/* Taskya AI — Live Task Progress */
+.task-progress{
+  width:100%;
+  max-width:950px;
+  margin:0 auto 14px;
+  padding:14px 16px;
+  background:rgba(255,255,255,.94);
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:16px;
+  box-shadow:0 8px 28px rgba(15,23,42,.08);
+  box-sizing:border-box;
+}
+
+.task-progress-title{
+  font-size:12px;
+  font-weight:800;
+  color:#344054;
+  margin-bottom:10px;
+  letter-spacing:.2px;
+}
+
+.task-progress-steps{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+
+.task-progress-steps::-webkit-scrollbar{
+  display:none;
+}
+
+.task-step{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex:0 0 auto;
+  padding:7px 10px;
+  border:1px solid #e4e7ec;
+  border-radius:999px;
+  background:#f8fafc;
+  color:#667085;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+  transition:all .2s ease;
+}
+
+.task-step span:first-child{
+  font-size:14px;
+}
+
+.task-step.active{
+  background:#eff6ff;
+  border-color:#93c5fd;
+  color:#175cd3;
+  box-shadow:0 0 0 3px rgba(37,99,235,.08);
+}
+
+.task-step.completed{
+  background:#ecfdf3;
+  border-color:#86efac;
+  color:#027a48;
+}
+
+.task-step.active span:first-child{
+  animation:taskPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes taskPulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.18)}
+}
+
+@media(max-width:767px){
+  .task-progress{
+    margin:0 8px 10px;
+    width:calc(100% - 16px);
+    padding:12px;
+  }
+
+  .task-progress-steps{
+    gap:6px;
+  }
+
+  .task-step{
+    font-size:10px;
+    padding:6px 8px;
+  }
+}
