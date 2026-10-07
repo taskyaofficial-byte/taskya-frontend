@@ -314,14 +314,22 @@ async function send(){
     headers:{  
      'Content-Type':'application/json'  
     },  
-    body:JSON.stringify({  
-     message:p,  
-     web_enabled:S.web,  
-     style:'Balanced',  
-     model:S.model  
-    })  
-   }  
-  );  
+  body:JSON.stringify({
+  message:p,
+  web_enabled:S.web,
+  style:'Balanced',
+  model:S.model,
+  history:getHistory()
+    .filter(x=>x.answer&&x.question!==p)
+    .slice(0,10)
+    .reverse()
+    .flatMap(x=>[
+      {role:'user',content:x.question},
+      {role:'assistant',content:x.answer}
+    ])
+})
+}
+);
   
   if(!r.ok)throw Error('Backend '+r.status);  
   
