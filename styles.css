@@ -1,241 +1,41 @@
-TASKYA AI — ROOT styles.css — ANSWER UI v3
-============================================
+/* ===== TASKYA HOME LOGO FINAL FIX ===== */
 
-DEPLOY:
-GitHub: taskyaofficial-byte/taskya-frontend
-File: ROOT/styles.css
-Production: Vercel
-
-IMPORTANT:
-APPEND THIS ENTIRE BLOCK AT THE VERY END of styles.css.
-
-This version is deliberately SCOPED so the welcome/home screen,
-logo, composer, Web, Voice, Attach and Send controls are NOT enlarged
-or moved.
-
-It also restores the original chat container sizing in case the
-previous v2 CSS was appended.
-
-------------------------------------------------------------
-PASTE THIS COMPLETE BLOCK AT THE VERY END
-------------------------------------------------------------
-
-/* =========================================================
-   TASKYA AI — MANUS-STYLE ANSWERS v3
-   SAFE / SCOPED VERSION
-   ========================================================= */
-
-/* Restore the normal chat container.
-   DO NOT use a giant 1120px container here because the welcome
-   screen lives inside the same main area. */
-.chat{
-  max-width:850px;
-  width:auto;
-  margin:0 auto;
-  padding:30px 25px 165px;
+#welcome img,
+#welcome svg,
+#welcome picture,
+#welcome .logo,
+#welcome .brand,
+#welcome .brand-logo,
+#welcome .hero-logo,
+#welcome [class*="logo"],
+#welcome [id*="logo"] {
+  width: 150px !important;
+  height: 150px !important;
+  max-width: 150px !important;
+  max-height: 150px !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
-/* Message rows only */
-.msg{
-  display:flex;
-  width:100%;
-  margin:22px 0;
-  box-sizing:border-box;
+#welcome {
+  overflow: hidden !important;
 }
 
-.msg.user{
-  justify-content:flex-start;
-}
-
-/* Remove card/box ONLY from actual messages */
-.msg .bubble{
-  width:100%;
-  max-width:none;
-  padding:0;
-  margin:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
-  white-space:normal;
-  font-size:15px;
-  line-height:1.78;
-  color:var(--text);
-}
-
-/* User question */
-.msg.user .bubble{
-  max-width:100%;
-  background:transparent;
-  border:0;
-  box-shadow:none;
-  color:var(--text);
-  font-weight:500;
-}
-
-/* AI message */
-.msg.ai{
-  gap:10px;
-  align-items:flex-start;
-}
-
-.msg.ai:before{
-  flex:0 0 29px;
-  width:29px;
-  height:29px;
-  margin-top:3px;
-}
-
-/* Headings */
-.msg .bubble h2{
-  margin:0 0 11px;
-  font-size:20px;
-  line-height:1.3;
-  font-weight:800;
-  letter-spacing:-.2px;
-}
-
-.msg .bubble h3{
-  margin:20px 0 8px;
-  font-size:16px;
-  line-height:1.4;
-  font-weight:800;
-}
-
-/* Paragraphs */
-.msg .bubble p{
-  margin:0 0 12px;
-}
-
-/* Lists */
-.msg .bubble ul,
-.msg .bubble ol{
-  margin:7px 0 16px;
-  padding-left:27px;
-}
-
-.msg .bubble li{
-  margin:7px 0;
-  padding-left:4px;
-  line-height:1.72;
-}
-
-.msg .bubble strong{
-  font-weight:800;
-}
-
-.msg .bubble code{
-  padding:2px 6px;
-  border-radius:5px;
-  background:#f2f4f7;
-  font-size:.92em;
-}
-
-/* Tables */
-.msg .answer-table-wrap{
-  width:100%;
-  overflow-x:auto;
-  margin:12px 0 18px;
-}
-
-.msg .answer-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:14px;
-  line-height:1.5;
-}
-
-.msg .answer-table th,
-.msg .answer-table td{
-  border:1px solid var(--line);
-  padding:8px 10px;
-  text-align:left;
-  vertical-align:top;
-}
-
-.msg .answer-table th{
-  background:#f8fafc;
-  font-weight:800;
-}
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media(max-width:767px){
-
-  /* Keep the home/welcome UI normal */
-  .chat{
-    max-width:none;
-    width:auto;
-    margin:0;
-    padding:20px 12px 180px;
-  }
-
-  /* Only answer messages get the Manus reading treatment */
-  .msg{
-    width:100%;
-    margin:20px 0;
-  }
-
-  .msg .bubble{
-    font-size:15px;
-    line-height:1.82;
-  }
-
-  .msg .bubble h2{
-    font-size:19px;
-    margin-bottom:10px;
-  }
-
-  .msg .bubble h3{
-    font-size:16px;
-    margin-top:19px;
-  }
-
-  .msg .bubble p{
-    margin-bottom:12px;
-  }
-
-  .msg .bubble ul,
-  .msg .bubble ol{
-    padding-left:24px;
-  }
-
-  .msg .bubble li{
-    margin:7px 0;
-  }
-
-  .msg.ai{
-    gap:8px;
-  }
-
-  .msg.ai:before{
-    flex:0 0 27px;
-    width:27px;
-    height:27px;
-  }
-
-  .msg .answer-table{
-    font-size:13px;
-  }
-}
-
-/* Dark mode: no message cards */
-@media(prefers-color-scheme:dark){
-
-  .msg .bubble,
-  .msg.user .bubble{
-    background:transparent;
-    border:0;
-    box-shadow:none;
-  }
-
-  .msg .bubble code{
-    background:#27272a;
-  }
-
-  .msg .answer-table th{
-    background:#27272a;
+@media (min-width: 768px) {
+  #welcome img,
+  #welcome svg,
+  #welcome picture,
+  #welcome .logo,
+  #welcome .brand,
+  #welcome .brand-logo,
+  #welcome .hero-logo,
+  #welcome [class*="logo"],
+  #welcome [id*="logo"] {
+    width: 180px !important;
+    height: 180px !important;
+    max-width: 180px !important;
+    max-height: 180px !important;
   }
 }
