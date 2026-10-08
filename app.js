@@ -1,4 +1,4 @@
-TASKYA AI — ROOT app.js — ANSWER UI v2
+TASKYA AI — ROOT app.js — ANSWER UI v3
 ========================================
 
 DEPLOY:
@@ -7,35 +7,17 @@ File: ROOT/app.js
 Production: Vercel
 
 IMPORTANT:
-This is a PATCH BLOCK, not a replacement for the entire 632-line app.js.
-Keep the rest of app.js unchanged.
+This is ONLY the answer-rendering block.
+Do NOT replace the whole app.js.
+Keep send(), history(), login(), web, voice, upload and API code unchanged.
 
-WHY THIS VERSION:
-- Manus-style clean answer presentation
-- Real Markdown headings / bullets / numbered points
-- No square message cards
-- Better spacing and readability
-- Tables render as tables
-- AI answer types normally, then becomes formatted
-- Keeps existing Google login, history, web, voice, upload and API logic intact
-
-
-============================================================
-1) FIND AND REPLACE THE CURRENT esc/msg/thinking/typeText BLOCK
-============================================================
-
-Find:
-
+Replace the current block beginning with:
 function esc(x){
 
-and replace through the end of:
+through the end of:
+function typeText(el,text){ ... }
 
-function typeText(el,text){
-   ...
-}
-
-with the complete block below.
-
+with this block.
 
 ------------------------------------------------------------
 PASTE THIS COMPLETE BLOCK
@@ -90,9 +72,7 @@ function renderMarkdown(text){
    continue;
   }
 
-  /* ---------------------------
-     Markdown table
-     --------------------------- */
+  /* TABLE */
   if(
    line.includes('|') &&
    i+1<lines.length &&
@@ -136,20 +116,15 @@ function renderMarkdown(text){
     });
 
     html+='</tr>';
-
     i++;
    }
 
    html+='</tbody></table></div>';
-
    i--;
-
    continue;
   }
 
-  /* ---------------------------
-     Headings
-     --------------------------- */
+  /* HEADINGS */
   if(/^###\s+/.test(line)){
    closeLists();
    html+='<h3>'+inlineMarkdown(
@@ -174,9 +149,7 @@ function renderMarkdown(text){
    continue;
   }
 
-  /* ---------------------------
-     Bullet list
-     --------------------------- */
+  /* BULLETS */
   if(/^[-•*]\s+/.test(line)){
 
    if(!inUl){
@@ -192,9 +165,7 @@ function renderMarkdown(text){
    continue;
   }
 
-  /* ---------------------------
-     Numbered list
-     --------------------------- */
+  /* NUMBERED LIST */
   if(/^\d+[.)]\s+/.test(line)){
 
    if(!inOl){
@@ -210,9 +181,7 @@ function renderMarkdown(text){
    continue;
   }
 
-  /* ---------------------------
-     Normal paragraph
-     --------------------------- */
+  /* NORMAL PARAGRAPH */
   closeLists();
 
   html+='<p>'+inlineMarkdown(line)+'</p>';
@@ -220,9 +189,8 @@ function renderMarkdown(text){
 
  closeLists();
 
- return html||'<p></p>';
+ return html || '<p></p>';
 }
-
 
 function msg(role,t){
 
@@ -245,7 +213,6 @@ function msg(role,t){
  return d;
 }
 
-
 function thinking(el){
 
  el.querySelector('.bubble').innerHTML=
@@ -257,7 +224,6 @@ function thinking(el){
  $('#agentState').textContent='Thinking…';
  $('#agentState').className='agent-state thinking';
 }
-
 
 function typeText(el,text){
 
@@ -302,12 +268,6 @@ function typeText(el,text){
 
     cursor.remove();
 
-    /*
-     * Important:
-     * During typing we show plain text for stability.
-     * When finished, convert the complete answer to
-     * Manus-style structured Markdown UI.
-     */
     b.innerHTML=renderMarkdown(text);
 
     resolve();
@@ -318,40 +278,8 @@ function typeText(el,text){
  });
 }
 
-
-============================================================
-2) DO NOT CHANGE send(), history(), login(), or API code
-============================================================
-
-Your current send() already sends conversation history.
-Keep that code as it is.
-
-DO NOT replace the whole app.js with this patch.
-
-
-============================================================
-RESULT
-============================================================
-
-Before:
-[large square box]
-## Heading
-1. point
-2. point
-
-After:
-Taskya AI
-
-Heading
-
-1. First clear point
-2. Second clear point
-3. Third clear point
-
-Important words are bold.
-Tables become real tables.
-No square answer cards.
-
-Actual answer length is controlled by the backend answer engine;
-this frontend patch makes whatever answer arrives much easier and faster
-to read.
+------------------------------------------------------------
+IMPORTANT
+------------------------------------------------------------
+DO NOT change send(), history(), login(), API_BASE,
+web_enabled, microphone, attachment or search code.
