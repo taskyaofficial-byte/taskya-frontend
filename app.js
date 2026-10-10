@@ -1,285 +1,270 @@
-TASKYA AI — ROOT app.js — ANSWER UI v3
-========================================
+if(  
+   updated.length&&  
+   typeof updated[0]==='object'&&  
+   updated[0].question===p  
+  ){  
+   updated[0].answer=errorMessage;  
+   saveHistory(updated);  
+  }  
+  
+  $('#agentState').textContent='Ready';  
+  $('#agentState').className='agent-state';  
+  
+  history();  
+  
+ }finally{  
+  
+  $('#send').disabled=false  
+  
+ }  
+}  
+  
+function login(){  
+  
+ modal(`  
+ <small>WELCOME TO TASKYA</small>  
+ <h2>Sign in to continue</h2>  
+ <p>Save chats, sync tasks and unlock your workspace.</p>  
+  
+<button class="google" id="google" type="button" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;box-sizing:border-box;padding:13px 18px;background:#fff;color:#202124;border:1px solid #dadce0;border-radius:12px;font-family:Arial,sans-serif;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 5px rgba(60,64,67,.12);transition:background .2s,border-color .2s,box-shadow .2s;">
+  <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink:0;">
+    <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.9 6.1-15z"/>
+    <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4.1 2-6.9 2-5.3 0-9.8-3.6-11.4-8.4H5.8v5.3A20 20 0 0 0 24 44z"/>
+    <path fill="#FBBC05" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.3H5.8a20 20 0 0 0 0 17.8z"/>
+    <path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6 29.5 4 24 4A20 20 0 0 0 5.8 15.1l6.8 5.3C14.2 15.6 18.7 12 24 12z"/>
+  </svg>
+  <span>Continue with Google</span>
+</button>
+  
+ <p>Or use email</p>  
+  
+ <input id="em" type="email" placeholder="Email address">  
+  
+ <input id="pw" type="password" placeholder="Password">  
+  
+ <div class="authgrid">  
+  <button id="li">Log in</button>  
+  <button id="su">Create account</button>  
+ </div>  
+  
+ <p id="am"></p>  
+ `);  
+  
+$('#google').onclick = async () => {
+  const status = $('#am');
+  const btn = $('#google');
 
-DEPLOY:
-GitHub: taskyaofficial-byte/taskya-frontend
-File: ROOT/app.js
-Production: Vercel
-
-IMPORTANT:
-This is ONLY the answer-rendering block.
-Do NOT replace the whole app.js.
-Keep send(), history(), login(), web, voice, upload and API code unchanged.
-
-Replace the current block beginning with:
-function esc(x){
-
-through the end of:
-function typeText(el,text){ ... }
-
-with this block.
-
-------------------------------------------------------------
-PASTE THIS COMPLETE BLOCK
-------------------------------------------------------------
-
-function esc(x){
- return String(x).replace(/[&<>"']/g,m=>({
-  '&':'&amp;',
-  '<':'&lt;',
-  '>':'&gt;',
-  '"':'&quot;',
-  "'":'&#039;'
- }[m]))
-}
-
-function inlineMarkdown(x){
- let s=esc(x);
-
- s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
- s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
- s=s.replace(/__([^_]+)__/g,'<strong>$1</strong>');
- s=s.replace(/\*([^*]+)\*/g,'<em>$1</em>');
-
- return s;
-}
-
-function renderMarkdown(text){
-
- const lines=String(text||'')
-  .replace(/\r\n/g,'\n')
-  .split('\n');
-
- let html='';
- let inUl=false;
- let inOl=false;
-
- const closeLists=()=>{
-  if(inUl){html+='</ul>';inUl=false}
-  if(inOl){html+='</ol>';inOl=false}
- };
-
- const isTableSeparator=(s)=>{
-  return /^\|?\s*:?-{2,}\s*(\|\s*:?-{2,}\s*)+\|?$/.test(s);
- };
-
- for(let i=0;i<lines.length;i++){
-
-  const line=lines[i].trim();
-
-  if(!line){
-   closeLists();
-   continue;
+  if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) {
+    status.textContent = 'Supabase URL or public key is missing in config.js.';
+    return;
   }
 
-  /* TABLE */
-  if(
-   line.includes('|') &&
-   i+1<lines.length &&
-   isTableSeparator(lines[i+1].trim())
-  ){
+  btn.disabled = true;
+  status.textContent = 'Connecting to Google...';
 
-   closeLists();
+  try {
+    if (!window.supabase?.createClient) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
 
-   const head=line
-    .replace(/^\||\|$/g,'')
-    .split('|')
-    .map(x=>x.trim());
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 
-   html+='<div class="answer-table-wrap">';
-   html+='<table class="answer-table">';
-   html+='<thead><tr>';
+        script.onload = resolve;
 
-   head.forEach(c=>{
-    html+='<th>'+inlineMarkdown(c)+'</th>';
-   });
+        script.onerror = () =>
+          reject(
+            new Error('Supabase library could not load. Please try again.')
+          );
 
-   html+='</tr></thead><tbody>';
+        document.head.appendChild(script);
+      });
+    }
 
-   i+=2;
+    if (!window.supabase?.createClient) {
+      throw new Error(
+        'Supabase library did not initialize. Please refresh and try again.'
+      );
+    }
 
-   while(i<lines.length){
+    /*
+     * Use the same Supabase client used by initAuth().
+     * This keeps the Google session connected to S.user.
+     */
+    if (!supabaseClient) {
+      supabaseClient = window.supabase.createClient(
+        C.SUPABASE_URL,
+        C.SUPABASE_ANON_KEY
+      );
+    }
 
-    const row=lines[i].trim();
-
-    if(!row || !row.includes('|')) break;
-
-    const cells=row
-     .replace(/^\||\|$/g,'')
-     .split('|')
-     .map(x=>x.trim());
-
-    html+='<tr>';
-
-    cells.forEach(c=>{
-     html+='<td>'+inlineMarkdown(c)+'</td>';
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
     });
 
-    html+='</tr>';
-    i++;
-   }
+    if (error) throw error;
 
-   html+='</tbody></table></div>';
-   i--;
-   continue;
+  } catch (e) {
+    status.textContent = e.message || 'Google login failed.';
+    btn.disabled = false;
   }
-
-  /* HEADINGS */
-  if(/^###\s+/.test(line)){
-   closeLists();
-   html+='<h3>'+inlineMarkdown(
-    line.replace(/^###\s+/,'')
-   )+'</h3>';
-   continue;
-  }
-
-  if(/^##\s+/.test(line)){
-   closeLists();
-   html+='<h2>'+inlineMarkdown(
-    line.replace(/^##\s+/,'')
-   )+'</h2>';
-   continue;
-  }
-
-  if(/^#\s+/.test(line)){
-   closeLists();
-   html+='<h2>'+inlineMarkdown(
-    line.replace(/^#\s+/,'')
-   )+'</h2>';
-   continue;
-  }
-
-  /* BULLETS */
-  if(/^[-•*]\s+/.test(line)){
-
-   if(!inUl){
-    closeLists();
-    html+='<ul>';
-    inUl=true;
-   }
-
-   html+='<li>'+inlineMarkdown(
-    line.replace(/^[-•*]\s+/,'')
-   )+'</li>';
-
-   continue;
-  }
-
-  /* NUMBERED LIST */
-  if(/^\d+[.)]\s+/.test(line)){
-
-   if(!inOl){
-    closeLists();
-    html+='<ol>';
-    inOl=true;
-   }
-
-   html+='<li>'+inlineMarkdown(
-    line.replace(/^\d+[.)]\s+/,'')
-   )+'</li>';
-
-   continue;
-  }
-
-  /* NORMAL PARAGRAPH */
-  closeLists();
-
-  html+='<p>'+inlineMarkdown(line)+'</p>';
- }
-
- closeLists();
-
- return html || '<p></p>';
-}
-
-function msg(role,t){
-
- $('#welcome').classList.add('hidden');
-
- let d=document.createElement('div');
-
- d.className=`msg ${role}`;
-
- d.innerHTML=
-  `<div class="bubble">${renderMarkdown(t)}</div>`;
-
- $('#chat').append(d);
-
- d.scrollIntoView({
-  behavior:'smooth',
-  block:'nearest'
- });
-
- return d;
-}
-
-function thinking(el){
-
- el.querySelector('.bubble').innerHTML=
-  '<span class="shimmer" aria-label="Taskya is thinking">'+
-  '<i></i><i></i><i></i>'+
-  '<span>Taskya is thinking…</span>'+
-  '</span>';
-
- $('#agentState').textContent='Thinking…';
- $('#agentState').className='agent-state thinking';
-}
-
-function typeText(el,text){
-
- return new Promise(resolve=>{
-
-  let b=el.querySelector('.bubble');
-  let i=0;
-
-  b.textContent='';
-
-  let cursor=document.createElement('span');
-  cursor.className='typing-cursor';
-
-  b.append(cursor);
-
-  const step=()=>{
-
-   if(i<text.length){
-
-    cursor.before(
-     document.createTextNode(
-      text.slice(
-       i,
-       i+Math.max(
-        1,
-        Math.min(3,text.length-i)
-       )
-      )
-     )
-    );
-
-    i=Math.min(text.length,i+3);
-
-    el.scrollIntoView({
-     behavior:'smooth',
-     block:'nearest'
-    });
-
-    setTimeout(step,10);
-
-   }else{
-
-    cursor.remove();
-
-    b.innerHTML=renderMarkdown(text);
-
-    resolve();
-   }
-  };
-
-  step();
- });
-}
-
-------------------------------------------------------------
-IMPORTANT
-------------------------------------------------------------
-DO NOT change send(), history(), login(), API_BASE,
-web_enabled, microphone, attachment or search code.
+};
+  
+ ['li','su'].forEach(id=>{  
+  $('#'+id).onclick=()=>{  
+   $('#am').textContent=  
+   'Supabase Auth is ready to connect after you add the public URL and anon key in config.js.'  
+  }  
+ })  
+}  
+  
+function policy(t){  
+  
+ let c={  
+  privacy:[  
+   'Privacy Policy',  
+   'Taskya may process account information, prompts, files, usage data and technical logs to provide and secure the service. Replace this starter text with your finalized policy before launch.'  
+  ],  
+  terms:[  
+   'Terms of Service',  
+   'Use Taskya only for lawful purposes. AI output may contain errors and should be reviewed before important actions. Replace this starter text with your finalized terms before launch.'  
+  ],  
+  refund:[  
+   'Refund & Cancellation Policy',  
+   'Paid plans are not activated yet. Before accepting payments, replace this starter with your actual refund, cancellation and billing terms.'  
+  ],  
+  contact:[  
+   'Contact Taskya',  
+   `Support email: <a href="mailto:${C.SUPPORT_EMAIL}">${C.SUPPORT_EMAIL}</a><br><br>Website: taskya.in`  
+  ]  
+ }[t]||[];  
+  
+ modal(`  
+ <small>LEGAL & SUPPORT</small>  
+ <h2>${c[0]}</h2>  
+ <p>${c[1]}</p>  
+ `)  
+}  
+  
+function closeMenu(){  
+ $('#side').classList.remove('open');  
+ $('#mobileShade').classList.remove('open')  
+}  
+  
+function openMenu(){  
+ $('#side').classList.add('open');  
+ $('#mobileShade').classList.add('open')  
+}  
+  
+$$('[data-policy]').forEach(  
+ b=>b.onclick=()=>policy(b.dataset.policy)  
+);  
+  
+$('#send').onclick=send;  
+  
+$('#prompt').onkeydown=e=>{  
+ if(e.key==='Enter'&&!e.shiftKey){  
+  e.preventDefault();  
+  send()  
+ }  
+};  
+  
+$('#prompt').oninput=e=>{  
+ e.target.style.height='auto';  
+ e.target.style.height=Math.min(130,e.target.scrollHeight)+'px'  
+};  
+  
+$('#web').onclick=()=>{  
+ S.web=!S.web;  
+ $('#web').classList.toggle('on',S.web);  
+ $('#mode').textContent=S.web?'Web':'Auto'  
+};  
+  
+$('#web2').onchange=e=>{  
+ S.web=e.target.checked  
+};  
+  
+$('#upload').onchange=e=>{  
+ let f=e.target.files[0];  
+  
+ if(f){  
+  $('#file').classList.remove('hidden');  
+  $('#file').textContent=f.name  
+ }  
+};  
+  
+$('#clear').onclick=()=>{  
+ localStorage.removeItem('taskya_history');  
+ history()  
+};  
+  
+$('#upgrade').onclick=$('#topUpgrade').onclick=()=>modal(`  
+ <small>TASKYA PRO</small>  
+ <h2>More work. Fewer limits.</h2>  
+ <p>Razorpay and PayPal are intentionally not activated yet. Their connection points are prepared in config.js.</p>  
+ <button class="primary" disabled>Payment gateway not configured</button>  
+`);  
+  
+$('#login').onclick=login;  
+$('#topLogin').onclick=login;  
+  
+$('#menu').onclick=openMenu;  
+$('#sideClose').onclick=closeMenu;  
+$('#mobileShade').onclick=closeMenu;  
+  
+$('#new').onclick=()=>{  
+ document.querySelectorAll('.view').forEach(  
+  x=>x.classList.add('hidden')  
+ );  
+  
+ $('#agent').classList.remove('hidden');  
+ $('#welcome').classList.remove('hidden');  
+ $('#chat').innerHTML='';  
+ $('#crumb').textContent='New Task';  
+  
+ closeMenu()  
+};  
+  
+$$('nav button').forEach(b=>b.onclick=()=>{  
+  
+ let v=b.dataset.view;  
+  
+ document.querySelectorAll('.view').forEach(  
+  x=>x.classList.add('hidden')  
+ );  
+  
+ $('#'+v).classList.remove('hidden');  
+  
+ $$('nav button').forEach(  
+  x=>x.classList.remove('active')  
+ );  
+  
+ b.classList.add('active');  
+  
+ $('#crumb').textContent=  
+  v==='agent'?  
+  'New Task':  
+  v[0].toUpperCase()+v.slice(1);  
+  
+ closeMenu()  
+});  
+  
+$$('.prompt-chip').forEach(b=>b.onclick=()=>{  
+ $('#prompt').value=b.dataset.p;  
+ $('#prompt').focus();  
+ $('#prompt').dispatchEvent(new Event('input'))  
+});  
+  
+$('#modelSelect').value=S.model;  
+  
+$('#modelSelect').onchange=e=>{  
+ S.model=e.target.value;  
+ localStorage.taskya_model=S.model  
+};  
+  
+history();  
+usage()  
+  
+})()
