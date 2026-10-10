@@ -541,7 +541,67 @@ $$('[data-policy]').forEach(
 );  
   
 $('#send').onclick=send;  
-  
+/* Taskya microphone */
+const voiceButton = $('#voice');
+
+if (voiceButton) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (SR) {
+    const recognition = new SR();
+    recognition.lang = 'hi-IN';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    let listening = false;
+
+    voiceButton.onclick = () => {
+      if (listening) {
+        recognition.stop();
+      } else {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.error('Voice start error:', e);
+        }
+      }
+    };
+
+    recognition.onstart = () => {
+      listening = true;
+      voiceButton.classList.add('on');
+      $('#agentState').textContent = 'Listening…';
+    };
+
+    recognition.onresult = (e) => {
+      let text = '';
+
+      for (let i = 0; i < e.results.length; i++) {
+        text += e.results[i][0].transcript;
+      }
+
+      $('#prompt').value = text;
+      $('#prompt').dispatchEvent(new Event('input'));
+    };
+
+    recognition.onerror = (e) => {
+      console.error('Microphone error:', e.error);
+      if (e.error === 'not-allowed') {
+        alert('Chrome settings mein microphone permission allow karo.');
+      }
+    };
+
+    recognition.onend = () => {
+      listening = false;
+      voiceButton.classList.remove('on');
+      $('#agentState').textContent = 'Ready';
+    };
+  } else {
+    voiceButton.onclick = () => {
+      alert('Voice input ke liye laptop par Google Chrome use karo.');
+    };
+  }
+}  
 $('#prompt').onkeydown=e=>{  
  if(e.key==='Enter'&&!e.shiftKey){  
   e.preventDefault();  
