@@ -1,815 +1,649 @@
-/* =========================================================
-   TASKYA AI — COMPLETE FRONTEND APP.JS
-   Chat • Send • Enter • History • Markdown • Web • Upload
-   Supabase Auth • Mobile Friendly
-   ========================================================= */
+(()=>{
 
-(() => {
-  'use strict';
+const C=window.TASKYA_CONFIG||{},
+$=s=>document.querySelector(s),
 
-  const C = window.TASKYA_CONFIG || {};
-  const $ = (s) => document.querySelector(s);
-  const $$ = (s) => [...document.querySelectorAll(s)];
-
-  const S = {
-    web: false,
-    used: Number(localStorage.getItem('taskya_used') || 0),
-    user: null,
-    model: localStorage.getItem('taskya_model') || 'taskya-fast-v1',
-    busy: false,
-    file: null
-  };
-
+$$=s=>[...document.querySelectorAll(s)], 
+S={  
+ web:false,  
+ used:+localStorage.taskya_used||0,  
+ user:null,  
+ model:localStorage.taskya_model||'taskya-fast-v1'  
+};  
   let supabaseClient = null;
 
-  /* -------------------- HELPERS -------------------- */
+async function initAuth() {
+  if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) return;
 
-  function esc(value) {
-    return String(value ?? '').replace(/[&<>"']/g, ch => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;'
-    })[ch]);
-  }
+  try {
+    if (!window.supabase?.createClient) {
+      await new Promise((resolve, reject) => {
+        const existing = document.querySelector(
+          'script[src*="supabase-js"]'
+        );
 
-  function setText(selector, value) {
-    const el = $(selector);
-    if (el) el.textContent = value;
-  }
+        if (existing) {
+          existing.addEventListener('load', resolve, { once: true });
+          existing.addEventListener('error', reject, { once: true });
+          return;
+        }
 
-  function setStatus(text, state = '') {
-    const el = $('#agentState');
-    if (!el) return;
-    el.textContent = text;
-    el.className = 'agent-state' + (state ? ' ' + state : '');
-  }
+        const script = document.createElement('script');
 
-  function scrollToBottom(el) {
-    if (el) {
-      el.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
+        script.src =
+          'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+
+        script.onload = resolve;
+
+        script.onerror = () =>
+          reject(
+            new Error('Supabase library could not load.')
+          );
+
+        document.head.appendChild(script);
       });
     }
-  }
 
-  function apiUrl(path) {
-    const base = String(C.API_BASE_URL || '').replace(/\/+$/, '');
-    if (!base) {
-      throw new Error('API_BASE_URL is missing in config.js');
-    }
-    return base + path;
-  }
-
-  /* -------------------- MARKDOWN -------------------- */
-
-  function inlineMarkdown(value) {
-    let s = esc(value);
-
-    s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
-    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
-    s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-    return s;
-  }
-
-  function renderMarkdown(value) {
-    const lines = String(value || '')
-      .replace(/\r\n/g, '\n')
-      .split('\n');
-
-    let html = '';
-    let ul = false;
-    let ol = false;
-
-    const closeLists = () => {
-      if (ul) {
-        html += '</ul>';
-        ul = false;
-      }
-      if (ol) {
-        html += '</ol>';
-        ol = false;
-      }
-    };
-
-    const isSeparator = line =>
-      /^\|?\s*:?-{2,}\s*(\|\s*:?-{2,}\s*)+\|?$/.test(line);
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-
-      if (!line) {
-        closeLists();
-        continue;
-      }
-
-      /* Markdown tables */
-      if (
-        line.includes('|') &&
-        i + 1 < lines.length &&
-        isSeparator(lines[i + 1].trim())
-      ) {
-        closeLists();
-
-        const headers = line
-          .replace(/^\||\|$/g, '')
-          .split('|')
-          .map(x => x.trim());
-
-        html += '<div class="answer-table-wrap"><table class="answer-table"><thead><tr>';
-
-        headers.forEach(cell => {
-          html += '<th>' + inlineMarkdown(cell) + '</th>';
-        });
-
-        html += '</tr></thead><tbody>';
-        i += 2;
-
-        while (i < lines.length) {
-          const row = lines[i].trim();
-
-          if (!row || !row.includes('|')) break;
-
-          const cells = row
-            .replace(/^\||\|$/g, '')
-            .split('|')
-            .map(x => x.trim());
-
-          html += '<tr>';
-
-          cells.forEach(cell => {
-            html += '<td>' + inlineMarkdown(cell) + '</td>';
-          });
-
-          html += '</tr>';
-          i++;
-        }
-
-        html += '</tbody></table></div>';
-        i--;
-        continue;
-      }
-
-      /* Headings */
-      if (/^###\s+/.test(line)) {
-        closeLists();
-        html += '<h3>' +
-          inlineMarkdown(line.replace(/^###\s+/, '')) +
-          '</h3>';
-        continue;
-      }
-
-      if (/^##\s+/.test(line) || /^#\s+/.test(line)) {
-        closeLists();
-        html += '<h2>' +
-          inlineMarkdown(line.replace(/^#{1,2}\s+/, '')) +
-          '</h2>';
-        continue;
-      }
-
-      /* Bullet list */
-      if (/^[-•*]\s+/.test(line)) {
-        if (ol) {
-          html += '</ol>';
-          ol = false;
-        }
-        if (!ul) {
-          html += '<ul>';
-          ul = true;
-        }
-
-        html += '<li>' +
-          inlineMarkdown(line.replace(/^[-•*]\s+/, '')) +
-          '</li>';
-        continue;
-      }
-
-      /* Numbered list */
-      if (/^\d+[.)]\s+/.test(line)) {
-        if (ul) {
-          html += '</ul>';
-          ul = false;
-        }
-        if (!ol) {
-          html += '<ol>';
-          ol = true;
-        }
-
-        html += '<li>' +
-          inlineMarkdown(line.replace(/^\d+[.)]\s+/, '')) +
-          '</li>';
-        continue;
-      }
-
-      closeLists();
-      html += '<p>' + inlineMarkdown(line) + '</p>';
+    if (!window.supabase?.createClient) {
+      throw new Error('Supabase library did not initialize.');
     }
 
-    closeLists();
-    return html || '<p></p>';
-  }
-
-  /* -------------------- CHAT MESSAGES -------------------- */
-
-  function msg(role, text) {
-    const chat = $('#chat');
-    if (!chat) throw new Error('Chat container #chat was not found.');
-
-    const welcome = $('#welcome');
-    if (welcome) welcome.classList.add('hidden');
-
-    const item = document.createElement('div');
-    item.className = 'msg ' + role;
-
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    bubble.innerHTML = renderMarkdown(text);
-
-    item.appendChild(bubble);
-    chat.appendChild(item);
-
-    scrollToBottom(item);
-    return item;
-  }
-
-  function thinking(item) {
-    const bubble = item?.querySelector('.bubble');
-    if (bubble) {
-      bubble.innerHTML =
-        '<span class="shimmer" aria-label="Taskya is thinking">' +
-        '<i></i><i></i><i></i>' +
-        '<span>Taskya is thinking…</span></span>';
-    }
-    setStatus('Thinking…', 'thinking');
-  }
-
-  function typeText(item, text) {
-    const bubble = item?.querySelector('.bubble');
-    if (!bubble) return Promise.resolve();
-
-    /* Render complete answer safely after response arrives. */
-    bubble.innerHTML = renderMarkdown(text);
-    scrollToBottom(item);
-    return Promise.resolve();
-  }
-
-  /* -------------------- HISTORY -------------------- */
-
-  function getHistory() {
-    try {
-      const value = JSON.parse(
-        localStorage.getItem('taskya_history') || '[]'
-      );
-      return Array.isArray(value) ? value : [];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  function saveHistory(items) {
-    try {
-      localStorage.setItem(
-        'taskya_history',
-        JSON.stringify(items.slice(0, 12))
-      );
-    } catch (e) {
-      console.warn('Could not save chat history:', e);
-    }
-  }
-
-  function history() {
-    const box = $('#history');
-    if (!box) return;
-
-    const items = getHistory();
-
-    box.innerHTML = items.map((item, index) => {
-      const question = typeof item === 'string'
-        ? item
-        : (item.question || '');
-
-      return '<button type="button" class="history-item" ' +
-        'data-history-index="' + index + '">' +
-        esc(question) + '</button>';
-    }).join('');
-
-    $$('#history .history-item').forEach(button => {
-      button.addEventListener('click', () => {
-        openHistory(Number(button.dataset.historyIndex));
-      });
-    });
-  }
-
-  function openHistory(index) {
-    const item = getHistory()[index];
-    if (!item) return;
-
-    const question = typeof item === 'string'
-      ? item
-      : (item.question || '');
-
-    const answer = typeof item === 'string'
-      ? ''
-      : (item.answer || '');
-
-    $$('.view').forEach(el => el.classList.add('hidden'));
-
-    $('#agent')?.classList.remove('hidden');
-    $('#welcome')?.classList.add('hidden');
-
-    const chat = $('#chat');
-    if (chat) chat.innerHTML = '';
-
-    if (question) msg('user', question);
-    if (answer) msg('ai', answer);
-
-    setText('#crumb', 'Task History');
-    closeMenu();
-  }
-
-  /* -------------------- USAGE -------------------- */
-
-  function usage() {
-    const limit = Number(C.FREE_TASK_LIMIT || 3);
-    const remaining = Math.max(0, limit - S.used);
-
-    setText(
-      '#usage',
-      S.user ? 'Workspace synced' : remaining + ' free tasks available'
+    supabaseClient = window.supabase.createClient(
+      C.SUPABASE_URL,
+      C.SUPABASE_ANON_KEY
     );
+
+    const { data } = await supabaseClient.auth.getSession();
+
+    S.user = data.session ? data.session.user : null;
+
+    usage();
+
+    supabaseClient.auth.onAuthStateChange(
+      (event, session) => {
+        S.user = session ? session.user : null;
+        usage();
+      }
+    );
+
+  } catch (e) {
+    console.error('Taskya Auth Error:', e);
+    S.user = null;
+    usage();
+  }
+}
+
+initAuth();
+
+const modal=(html)=>{
+ $('#modalBody').innerHTML=html;  
+ $('#modal').classList.remove('hidden')  
+};  
+  
+$('.x').onclick=()=>$('#modal').classList.add('hidden');  
+$('.shade').onclick=()=>$('#modal').classList.add('hidden');  
+  
+function usage(){  
+ let n=Math.max(0,(C.FREE_TASK_LIMIT||3)-S.used);  
+ $('#usage').textContent=S.user?'Workspace synced':`${n} free tasks available`  
+}  
+  
+/* Recent Tasks */  
+function getHistory(){  
+ try{  
+  return JSON.parse(localStorage.taskya_history||'[]')  
+ }catch(e){  
+  return []  
+ }  
+}  
+  
+function saveHistory(h){  
+ localStorage.taskya_history=JSON.stringify(h.slice(0,12))  
+}  
+  
+function history(){  
+  
+ let h=getHistory();  
+  
+ $('#history').innerHTML=h.map((item,index)=>{  
+  
+  let question=typeof item==='string'?item:(item.question||'');  
+  
+  return `<button class="history-item" data-history-index="${index}">${esc(question)}</button>`  
+  
+ }).join('');  
+  
+ $$('#history .history-item').forEach(btn=>{  
+  btn.onclick=()=>{  
+   const index=Number(btn.dataset.historyIndex);  
+   openHistory(index)  
+  }  
+ })  
+}  
+  
+function openHistory(index){  
+  
+ const h=getHistory();  
+ const item=h[index];  
+  
+ if(!item)return;  
+  
+ let question='';  
+ let answer='';  
+  
+ if(typeof item==='string'){  
+  question=item;  
+ }else{  
+  question=item.question||'';  
+  answer=item.answer||'';  
+ }  
+  
+ document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));  
+  
+ const agent=$('#agent');  
+ if(agent)agent.classList.remove('hidden');  
+  
+ $('#welcome').classList.add('hidden');  
+ $('#chat').innerHTML='';  
+  
+ if(question)msg('user',question);  
+ if(answer)msg('ai',answer);  
+  
+ $('#crumb').textContent='Task History';  
+  
+ closeMenu();  
+}  
+  
+function esc(x){  
+ return String(x).replace(/[&<>"']/g,m=>({  
+  '&':'&amp;',  
+  '<':'&lt;',  
+  '>':'&gt;',  
+  '"':'&quot;',  
+  "'":'&#039;'  
+ }[m]))  
+}  
+  
+function msg(role,t){  
+  
+ $('#welcome').classList.add('hidden');  
+  
+ let d=document.createElement('div');  
+  
+ d.className=`msg ${role}`;  
+  
+ d.innerHTML=`<div class="bubble">${esc(t)}</div>`;  
+  
+ $('#chat').append(d);  
+  
+ d.scrollIntoView({  
+  behavior:'smooth'  
+ });  
+  
+ return d  
+}  
+  
+function thinking(el){  
+  
+ el.querySelector('.bubble').innerHTML=  
+ '<span class="shimmer" aria-label="Taskya is thinking"><i></i><i></i><i></i><span>Taskya is thinking…</span></span>';  
+  
+ $('#agentState').textContent='Thinking…';  
+ $('#agentState').className='agent-state thinking'  
+}  
+  
+function typeText(el,text){  
+  
+ return new Promise(resolve=>{  
+  
+  let b=el.querySelector('.bubble'),  
+  i=0;  
+  
+  b.textContent='';  
+  
+  let cursor=document.createElement('span');  
+  
+  cursor.className='typing-cursor';  
+  
+  b.append(cursor);  
+  
+  const step=()=>{  
+  
+   if(i<text.length){  
+  
+    cursor.before(  
+     document.createTextNode(  
+      text.slice(  
+       i,  
+       i+Math.max(  
+        1,  
+        Math.min(3,text.length-i)  
+       )  
+      )  
+     )  
+    );  
+  
+    i=Math.min(text.length,i+3);  
+  
+    el.scrollIntoView({  
+     behavior:'smooth',  
+     block:'nearest'  
+    });  
+  
+    setTimeout(step,12)  
+  
+   }else{  
+  
+    cursor.remove();  
+    resolve()  
+  
+   }  
+  
+  };  
+  
+  step()  
+  
+ })  
+}  
+ function taskProgressShow(){
+  const box=document.getElementById('taskProgress');
+  if(!box)return;
+  box.hidden=false;
+
+  document.querySelectorAll('#taskProgress .task-step').forEach(step=>{
+    step.classList.remove('active','completed');
+  });
+}
+
+function taskProgressStep(name){
+  const steps=['planning','researching','tools','files','analyzing','verifying','delivering'];
+  const current=steps.indexOf(name);
+  if(current<0)return;
+
+  document.querySelectorAll('#taskProgress .task-step').forEach(step=>{
+    const index=steps.indexOf(step.dataset.step);
+    step.classList.toggle('completed',index<current);
+    step.classList.toggle('active',index===current);
+  });
+}
+
+function taskProgressHide(){
+  const box=document.getElementById('taskProgress');
+  if(!box)return;
+  box.hidden=true;
+} 
+async function send(){  
+  
+ let p=$('#prompt').value.trim();  
+  
+ if(!p||$('#send').disabled)return;  
+  
+ if(!S.user&&S.used>=(C.FREE_TASK_LIMIT||5)){  
+  login();  
+  return  
+ }  
+  
+ $('#prompt').value='';  
+ $('#prompt').style.height='auto';  
+ $('#send').disabled=true;  
+  
+ msg('user',p);  
+  
+ let a=msg('ai','');  
+  
+ thinking(a);  
+  
+ /* Save the task immediately with an empty answer */  
+ let h=getHistory();  
+  
+ h.unshift({  
+  question:p,  
+  answer:'',  
+  createdAt:new Date().toISOString()  
+ });  
+  
+ saveHistory(h);  
+ history();  
+  
+ try{  
+  
+  let r=await fetch(  
+   (C.API_BASE_URL||'').replace(/\/$/,'')+'/api/chat',  
+   {  
+    method:'POST',  
+    headers:{  
+     'Content-Type':'application/json'  
+    },  
+  body:JSON.stringify({
+  message:p,
+  web_enabled:S.web,
+  style:'Balanced',
+  model:S.model,
+  history:getHistory()
+    .filter(x=>x.answer&&x.question!==p)
+    .slice(0,10)
+    .reverse()
+    .flatMap(x=>[
+      {role:'user',content:x.question},
+      {role:'assistant',content:x.answer}
+    ])
+})
+}
+);
+  
+  if(!r.ok)throw Error('Backend '+r.status);  
+  
+  let d=await r.json();  
+  
+  let answer=  
+   d.response||  
+   d.answer||  
+   d.message||  
+   'Task completed.';  
+  
+  /* Save the answer into the latest task */  
+  let updated=getHistory();  
+  
+  if(  
+   updated.length&&  
+   typeof updated[0]==='object'&&  
+   updated[0].question===p  
+  ){  
+   updated[0].answer=answer;  
+   updated[0].updatedAt=new Date().toISOString();  
+   saveHistory(updated);  
+  }  
+  
+  await typeText(a,answer);  
+  
+  S.used++;  
+  
+  localStorage.taskya_used=S.used;  
+  
+  usage();  
+  
+  $('#agentState').textContent='Done';  
+  $('#agentState').className='agent-state done';  
+  
+  history();  
+  
+ }catch(e){  
+  
+  let errorMessage=  
+   'Backend not connected. Put your Render URL in config.js and verify /api/chat is live.';  
+  
+  await typeText(a,errorMessage);  
+  
+  let updated=getHistory();  
+  
+  if(  
+   updated.length&&  
+   typeof updated[0]==='object'&&  
+   updated[0].question===p  
+  ){  
+   updated[0].answer=errorMessage;  
+   saveHistory(updated);  
+  }  
+  
+  $('#agentState').textContent='Ready';  
+  $('#agentState').className='agent-state';  
+  
+  history();  
+  
+ }finally{  
+  
+  $('#send').disabled=false  
+  
+ }  
+}  
+  
+function login(){  
+  
+ modal(`  
+ <small>WELCOME TO TASKYA</small>  
+ <h2>Sign in to continue</h2>  
+ <p>Save chats, sync tasks and unlock your workspace.</p>  
+  
+<button class="google" id="google" type="button" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;box-sizing:border-box;padding:13px 18px;background:#fff;color:#202124;border:1px solid #dadce0;border-radius:12px;font-family:Arial,sans-serif;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 5px rgba(60,64,67,.12);transition:background .2s,border-color .2s,box-shadow .2s;">
+  <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink:0;">
+    <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.9 6.1-15z"/>
+    <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4.1 2-6.9 2-5.3 0-9.8-3.6-11.4-8.4H5.8v5.3A20 20 0 0 0 24 44z"/>
+    <path fill="#FBBC05" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.3H5.8a20 20 0 0 0 0 17.8z"/>
+    <path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6 29.5 4 24 4A20 20 0 0 0 5.8 15.1l6.8 5.3C14.2 15.6 18.7 12 24 12z"/>
+  </svg>
+  <span>Continue with Google</span>
+</button>
+  
+ <p>Or use email</p>  
+  
+ <input id="em" type="email" placeholder="Email address">  
+  
+ <input id="pw" type="password" placeholder="Password">  
+  
+ <div class="authgrid">  
+  <button id="li">Log in</button>  
+  <button id="su">Create account</button>  
+ </div>  
+  
+ <p id="am"></p>  
+ `);  
+  
+$('#google').onclick = async () => {
+  const status = $('#am');
+  const btn = $('#google');
+
+  if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) {
+    status.textContent = 'Supabase URL or public key is missing in config.js.';
+    return;
   }
 
-  /* -------------------- AUTH -------------------- */
+  btn.disabled = true;
+  status.textContent = 'Connecting to Google...';
 
-  async function initAuth() {
-    if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) {
-      usage();
-      return;
+  try {
+    if (!window.supabase?.createClient) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+
+        script.onload = resolve;
+
+        script.onerror = () =>
+          reject(
+            new Error('Supabase library could not load. Please try again.')
+          );
+
+        document.head.appendChild(script);
+      });
     }
 
-    try {
-      if (!window.supabase?.createClient) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src =
-            'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-          script.onload = resolve;
-          script.onerror = () =>
-            reject(new Error('Supabase library failed to load.'));
-          document.head.appendChild(script);
-        });
-      }
+    if (!window.supabase?.createClient) {
+      throw new Error(
+        'Supabase library did not initialize. Please refresh and try again.'
+      );
+    }
 
+    /*
+     * Use the same Supabase client used by initAuth().
+     * This keeps the Google session connected to S.user.
+     */
+    if (!supabaseClient) {
       supabaseClient = window.supabase.createClient(
         C.SUPABASE_URL,
         C.SUPABASE_ANON_KEY
       );
-
-      const result = await supabaseClient.auth.getSession();
-      S.user = result.data?.session?.user || null;
-      usage();
-
-      supabaseClient.auth.onAuthStateChange((_event, session) => {
-        S.user = session?.user || null;
-        usage();
-      });
-    } catch (error) {
-      console.error('Taskya Auth Error:', error);
-      usage();
-    }
-  }
-
-  function modal(html) {
-    const body = $('#modalBody');
-    const box = $('#modal');
-    if (!body || !box) return;
-
-    body.innerHTML = html;
-    box.classList.remove('hidden');
-  }
-
-  function closeModal() {
-    $('#modal')?.classList.add('hidden');
-  }
-
-  async function googleLogin() {
-    const status = $('#am');
-    const button = $('#google');
-
-    if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) {
-      if (status) {
-        status.textContent =
-          'Supabase URL or public key is missing in config.js.';
-      }
-      return;
     }
 
-    if (button) button.disabled = true;
-
-    try {
-      if (!supabaseClient) {
-        if (!window.supabase?.createClient) {
-          throw new Error('Supabase library is not loaded.');
-        }
-
-        supabaseClient = window.supabase.createClient(
-          C.SUPABASE_URL,
-          C.SUPABASE_ANON_KEY
-        );
-      }
-
-      const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      if (status) status.textContent = error.message || 'Google login failed.';
-      if (button) button.disabled = false;
-    }
-  }
-
-  function login() {
-    modal(`
-      <small>WELCOME TO TASKYA</small>
-      <h2>Sign in to continue</h2>
-      <p>Save chats, sync tasks and unlock your workspace.</p>
-      <button class="google" id="google" type="button"
-        style="width:100%;padding:13px;background:#fff;color:#202124;
-        border:1px solid #dadce0;border-radius:12px;cursor:pointer">
-        Continue with Google
-      </button>
-      <p>Or use email</p>
-      <input id="em" type="email" placeholder="Email address">
-      <input id="pw" type="password" placeholder="Password">
-      <div class="authgrid">
-        <button id="li" type="button">Log in</button>
-        <button id="su" type="button">Create account</button>
-      </div>
-      <p id="am"></p>
-    `);
-
-    $('#google')?.addEventListener('click', googleLogin);
-
-    ['li', 'su'].forEach(id => {
-      $('#' + id)?.addEventListener('click', () => {
-        setText(
-          '#am',
-          'Email login needs to be connected to Supabase Auth.'
-        );
-      });
-    });
-  }
-
-  /* -------------------- SEND MESSAGE -------------------- */
-
-  async function send() {
-    const prompt = $('#prompt');
-    const button = $('#send');
-
-    if (!prompt || !button || S.busy) return;
-
-    const question = prompt.value.trim();
-    if (!question) {
-      prompt.focus();
-      return;
-    }
-
-    const limit = Number(C.FREE_TASK_LIMIT || 3);
-
-    if (!S.user && S.used >= limit) {
-      login();
-      return;
-    }
-
-    S.busy = true;
-    button.disabled = true;
-    button.setAttribute('aria-busy', 'true');
-
-    prompt.value = '';
-    prompt.style.height = 'auto';
-
-    msg('user', question);
-
-    const answerElement = msg('ai', '');
-    thinking(answerElement);
-
-    const items = getHistory();
-    items.unshift({
-      question,
-      answer: '',
-      createdAt: new Date().toISOString()
-    });
-    saveHistory(items);
-    history();
-
-    try {
-      const response = await fetch(apiUrl('/api/chat'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: question,
-          web_enabled: S.web,
-          style: 'Balanced',
-          model: S.model,
-          history: getHistory()
-            .filter(item =>
-              typeof item === 'object' &&
-              item.answer &&
-              item.question !== question
-            )
-            .slice(0, 10)
-            .reverse()
-            .flatMap(item => [
-              { role: 'user', content: item.question },
-              { role: 'assistant', content: item.answer }
-            ])
-        })
-      });
-
-      let data = {};
-
-      try {
-        data = await response.json();
-      } catch (_) {
-        throw new Error(
-          'Server response was not valid JSON. Check the backend.'
-        );
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          data.detail || data.error || ('Server error ' + response.status)
-        );
-      }
-
-      const answer = String(
-        data.response ??
-        data.answer ??
-        data.message ??
-        'Task completed.'
-      );
-
-      const updated = getHistory();
-
-      if (
-        updated.length &&
-        typeof updated[0] === 'object' &&
-        updated[0].question === question
-      ) {
-        updated[0].answer = answer;
-        updated[0].updatedAt = new Date().toISOString();
-        saveHistory(updated);
-      }
-
-      await typeText(answerElement, answer);
-
-      S.used++;
-      localStorage.setItem('taskya_used', String(S.used));
-
-      usage();
-      setStatus('Done', 'done');
-      history();
-
-    } catch (error) {
-      console.error('Taskya send error:', error);
-
-      const message = error.message || 'An unexpected error occurred.';
-
-      await typeText(
-        answerElement,
-        'Sorry, your message could not be completed.\n\n' +
-        '**Problem:** ' + message +
-        '\n\nPlease check the Render backend URL in config.js and make sure /api/chat is working.'
-      );
-
-      const updated = getHistory();
-
-      if (
-        updated.length &&
-        typeof updated[0] === 'object' &&
-        updated[0].question === question
-      ) {
-        updated[0].answer = 'Error: ' + message;
-        saveHistory(updated);
-      }
-
-      setStatus('Ready');
-      history();
-
-    } finally {
-      S.busy = false;
-      button.disabled = false;
-      button.removeAttribute('aria-busy');
-      prompt.focus();
-    }
-  }
-
-  /* -------------------- WEB SEARCH -------------------- */
-
-  function toggleWeb() {
-    S.web = !S.web;
-
-    $('#web')?.classList.toggle('on', S.web);
-    setText('#mode', S.web ? 'Web' : 'Auto');
-
-    const checkbox = $('#web2');
-    if (checkbox) checkbox.checked = S.web;
-  }
-
-  /* -------------------- FILE PICKER -------------------- */
-
-  function handleUpload(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    S.file = file;
-
-    const label = $('#file');
-    if (label) {
-      label.textContent = file.name;
-      label.classList.remove('hidden');
-    }
-
-    /*
-      This keeps the file selection visible.
-      The existing /api/chat backend must support file uploads
-      before the actual file contents can be sent to the AI.
-    */
-  }
-
-  /* -------------------- MENU -------------------- */
-
-  function closeMenu() {
-    $('#side')?.classList.remove('open');
-    $('#mobileShade')?.classList.remove('open');
-  }
-
-  function openMenu() {
-    $('#side')?.classList.add('open');
-    $('#mobileShade')?.classList.add('open');
-  }
-
-  /* -------------------- POLICIES -------------------- */
-
-  function policy(type) {
-    const policies = {
-      privacy: [
-        'Privacy Policy',
-        'Taskya may process account information, prompts, usage data and technical logs to provide and secure the service.'
-      ],
-      terms: [
-        'Terms of Service',
-        'Use Taskya only for lawful purposes. AI output may contain errors and should be reviewed before important actions.'
-      ],
-      refund: [
-        'Refund & Cancellation Policy',
-        'Review the actual billing and refund terms before making a payment.'
-      ],
-      contact: [
-        'Contact Taskya',
-        'Support email: info@taskya.in'
-      ]
-    };
-
-    const item = policies[type] || ['Taskya', ''];
-    modal(
-      '<small>LEGAL & SUPPORT</small>' +
-      '<h2>' + esc(item[0]) + '</h2>' +
-      '<p>' + esc(item[1]) + '</p>' +
-      (type === 'contact'
-        ? '<p><a href="mailto:info@taskya.in">info@taskya.in</a></p>'
-        : '')
-    );
-  }
-
-  /* -------------------- INITIALIZE EVENTS -------------------- */
-
-  function init() {
-    $('#send')?.addEventListener('click', send);
-
-    /*
-      Enter sends.
-      Shift+Enter adds a new line.
-    */
-    $('#prompt')?.addEventListener('keydown', event => {
-      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-        event.preventDefault();
-        send();
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
       }
     });
 
-    $('#prompt')?.addEventListener('input', event => {
-      const el = event.target;
-      el.style.height = 'auto';
-      el.style.height = Math.min(130, el.scrollHeight) + 'px';
-    });
+    if (error) throw error;
 
-    $('#web')?.addEventListener('click', toggleWeb);
-
-    $('#web2')?.addEventListener('change', event => {
-      S.web = event.target.checked;
-      $('#web')?.classList.toggle('on', S.web);
-      setText('#mode', S.web ? 'Web' : 'Auto');
-    });
-
-    $('#upload')?.addEventListener('change', handleUpload);
-
-    $('#voice')?.addEventListener('click', () => {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if (!SpeechRecognition) {
-        alert('Voice input is not supported in this browser. Try Chrome.');
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'hi-IN';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onresult = event => {
-        const transcript = event.results[0][0].transcript;
-        const prompt = $('#prompt');
-
-        if (prompt) {
-          prompt.value = (prompt.value + ' ' + transcript).trim();
-          prompt.dispatchEvent(new Event('input'));
-          prompt.focus();
-        }
-      };
-
-      recognition.onerror = event => {
-        console.warn('Voice input error:', event.error);
-      };
-
-      recognition.start();
-    });
-
-    $('#clear')?.addEventListener('click', () => {
-      localStorage.removeItem('taskya_history');
-      const chat = $('#chat');
-      if (chat) chat.innerHTML = '';
-      $('#welcome')?.classList.remove('hidden');
-      history();
-    });
-
-    $('#upgrade')?.addEventListener('click', () => {
-      modal(
-        '<small>TASKYA PRO</small>' +
-        '<h2>More work. Fewer limits.</h2>' +
-        '<p>Payment gateway activation is required before subscriptions can be purchased.</p>'
-      );
-    });
-
-    $('#topUpgrade')?.addEventListener('click', () => {
-      $('#upgrade')?.click();
-    });
-
-    $('#login')?.addEventListener('click', login);
-    $('#topLogin')?.addEventListener('click', login);
-
-    $('.x')?.addEventListener('click', closeModal);
-    $('.shade')?.addEventListener('click', closeModal);
-
-    $('#menu')?.addEventListener('click', openMenu);
-    $('#sideClose')?.addEventListener('click', closeMenu);
-    $('#mobileShade')?.addEventListener('click', closeMenu);
-
-    $$('[data-policy]').forEach(button => {
-      button.addEventListener('click', () => {
-        policy(button.dataset.policy);
-      });
-    });
-
-    $('#new')?.addEventListener('click', () => {
-      $$('.view').forEach(el => el.classList.add('hidden'));
-$('#agent')?.classList.remove('hidden');
-      $('#welcome')?.classList.remove('hidden');
-      setText('#crumb', 'New Task');
-      closeMenu();
-      $('#prompt')?.focus();
-    });
+  } catch (e) {
+    status.textContent = e.message || 'Google login failed.';
+    btn.disabled = false;
   }
-
-  history();
-  usage();
-  initAuth();
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init, { once: true });
-} else {
-  init();
-}
-})();
+};
+  
+ ['li','su'].forEach(id=>{  
+  $('#'+id).onclick=()=>{  
+   $('#am').textContent=  
+   'Supabase Auth is ready to connect after you add the public URL and anon key in config.js.'  
+  }  
+ })  
+}  
+  
+function policy(t){  
+  
+ let c={  
+  privacy:[  
+   'Privacy Policy',  
+   'Taskya may process account information, prompts, files, usage data and technical logs to provide and secure the service. Replace this starter text with your finalized policy before launch.'  
+  ],  
+  terms:[  
+   'Terms of Service',  
+   'Use Taskya only for lawful purposes. AI output may contain errors and should be reviewed before important actions. Replace this starter text with your finalized terms before launch.'  
+  ],  
+  refund:[  
+   'Refund & Cancellation Policy',  
+   'Paid plans are not activated yet. Before accepting payments, replace this starter with your actual refund, cancellation and billing terms.'  
+  ],  
+  contact:[  
+   'Contact Taskya',  
+   `Support email: <a href="mailto:${C.SUPPORT_EMAIL}">${C.SUPPORT_EMAIL}</a><br><br>Website: taskya.in`  
+  ]  
+ }[t]||[];  
+  
+ modal(`  
+ <small>LEGAL & SUPPORT</small>  
+ <h2>${c[0]}</h2>  
+ <p>${c[1]}</p>  
+ `)  
+}  
+  
+function closeMenu(){  
+ $('#side').classList.remove('open');  
+ $('#mobileShade').classList.remove('open')  
+}  
+  
+function openMenu(){  
+ $('#side').classList.add('open');  
+ $('#mobileShade').classList.add('open')  
+}  
+  
+$$('[data-policy]').forEach(  
+ b=>b.onclick=()=>policy(b.dataset.policy)  
+);  
+  
+$('#send').onclick=send;  
+  
+$('#prompt').onkeydown=e=>{  
+ if(e.key==='Enter'&&!e.shiftKey){  
+  e.preventDefault();  
+  send()  
+ }  
+};  
+  
+$('#prompt').oninput=e=>{  
+ e.target.style.height='auto';  
+ e.target.style.height=Math.min(130,e.target.scrollHeight)+'px'  
+};  
+  
+$('#web').onclick=()=>{  
+ S.web=!S.web;  
+ $('#web').classList.toggle('on',S.web);  
+ $('#mode').textContent=S.web?'Web':'Auto'  
+};  
+  
+$('#web2').onchange=e=>{  
+ S.web=e.target.checked  
+};  
+  
+$('#upload').onchange=e=>{  
+ let f=e.target.files[0];  
+  
+ if(f){  
+  $('#file').classList.remove('hidden');  
+  $('#file').textContent=f.name  
+ }  
+};  
+  
+$('#clear').onclick=()=>{  
+ localStorage.removeItem('taskya_history');  
+ history()  
+};  
+  
+$('#upgrade').onclick=$('#topUpgrade').onclick=()=>modal(`  
+ <small>TASKYA PRO</small>  
+ <h2>More work. Fewer limits.</h2>  
+ <p>Razorpay and PayPal are intentionally not activated yet. Their connection points are prepared in config.js.</p>  
+ <button class="primary" disabled>Payment gateway not configured</button>  
+`);  
+  
+$('#login').onclick=login;  
+$('#topLogin').onclick=login;  
+  
+$('#menu').onclick=openMenu;  
+$('#sideClose').onclick=closeMenu;  
+$('#mobileShade').onclick=closeMenu;  
+  
+$('#new').onclick=()=>{  
+ document.querySelectorAll('.view').forEach(  
+  x=>x.classList.add('hidden')  
+ );  
+  
+ $('#agent').classList.remove('hidden');  
+ $('#welcome').classList.remove('hidden');  
+ $('#chat').innerHTML='';  
+ $('#crumb').textContent='New Task';  
+  
+ closeMenu()  
+};  
+  
+$$('nav button').forEach(b=>b.onclick=()=>{  
+  
+ let v=b.dataset.view;  
+  
+ document.querySelectorAll('.view').forEach(  
+  x=>x.classList.add('hidden')  
+ );  
+  
+ $('#'+v).classList.remove('hidden');  
+  
+ $$('nav button').forEach(  
+  x=>x.classList.remove('active')  
+ );  
+  
+ b.classList.add('active');  
+  
+ $('#crumb').textContent=  
+  v==='agent'?  
+  'New Task':  
+  v[0].toUpperCase()+v.slice(1);  
+  
+ closeMenu()  
+});  
+  
+$$('.prompt-chip').forEach(b=>b.onclick=()=>{  
+ $('#prompt').value=b.dataset.p;  
+ $('#prompt').focus();  
+ $('#prompt').dispatchEvent(new Event('input'))  
+});  
+  
+$('#modelSelect').value=S.model;  
+  
+$('#modelSelect').onchange=e=>{  
+ S.model=e.target.value;  
+ localStorage.taskya_model=S.model  
+};  
+  
+history();  
+usage()  
+  
+})()  
+  
