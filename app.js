@@ -163,7 +163,20 @@ function esc(x){
   "'":'&#039;'  
  }[m]))  
 }  
-  
+function linkify(text) {
+  return esc(text).replace(
+    /(https?:\/\/[^\s<]+)/g,
+    function(url) {
+      const cleanUrl = url.replace(/[.,!?;:)\]]+$/, '');
+      const extra = url.slice(cleanUrl.length);
+
+      return '<a href="' + cleanUrl +
+        '" target="_blank" rel="noopener noreferrer" ' +
+        'style="color:#2563eb;text-decoration:underline;overflow-wrap:anywhere;">' +
+        cleanUrl + '</a>' + extra;
+    }
+  );
+}  
 function msg(role,t){  
   
  $('#welcome').classList.add('hidden');  
@@ -172,7 +185,7 @@ function msg(role,t){
   
  d.className=`msg ${role}`;  
   
- d.innerHTML=`<div class="bubble">${esc(t)}</div>`;  
+ d.innerHTML=`<div class="bubble">${linkify(t)}</div>`;  
   
  $('#chat').append(d);  
   
