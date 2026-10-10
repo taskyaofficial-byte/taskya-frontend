@@ -793,4 +793,4 @@
     });
 
     $('#new')?.addEventListener('click', () => {
-      $$('.view').
+      $$('.view').forEach(el => el.classList.add('hidden'));
