@@ -209,60 +209,121 @@ function thinking(el){
  $('#agentState').textContent='Thinking…';  
  $('#agentState').className='agent-state thinking'  
 }  
-  
-function typeText(el,text){  
-  
- return new Promise(resolve=>{  
-  
-  let b=el.querySelector('.bubble'),  
-  i=0;  
-  
-  b.textContent='';  
-  
-  let cursor=document.createElement('span');  
-  
-  cursor.className='typing-cursor';  
-  
-  b.append(cursor);  
-  
-  const step=()=>{  
-  
-   if(i<text.length){  
-  
-    cursor.before(  
-     document.createTextNode(  
-      text.slice(  
-       i,  
-       i+Math.max(  
-        1,  
-        Math.min(3,text.length-i)  
-       )  
-      )  
-     )  
-    );  
-  
-    i=Math.min(text.length,i+3);  
-  
-    el.scrollIntoView({  
-     behavior:'smooth',  
-     block:'nearest'  
-    });  
-  
-    setTimeout(step,12)  
-  
-   }else{  
-  
-    cursor.remove();  
-    resolve()  
-  
-   }  
-  
-  };  
-  
-  step()  
-  
- })  
-}  
+function renderMarkdown(text) {
+  const safe = esc(String(text));
+  const lines = safe.split(/\r?\n/);
+  const out = [];
+  let inList = '';
+
+  const closeList = () => {
+    if (inList) {
+      out.push(inList === 'ol' ? '</ol>' : '</ul>');
+      inList = '';
+    }
+  };
+
+  for (const line of lines) {
+    const s = line.trim();
+
+    if (!s) {
+      closeList();
+      continue;
+    }
+
+    if (/^[-*_]{3,}$/.test(s)) {
+      closeList();
+      out.push('<hr>');
+      continue;
+    }
+
+    const heading = s.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      closeList();
+      const level = heading[1].length;
+      out.push('<h' + level + '>' + heading[2] + '</h' + level + '>');
+      continue;
+    }
+
+    const numbered = s.match(/^\d+[.)]\s+(.+)$/);
+    const bullet = s.match(/^[-*•]\s+(.+)$/);
+
+    if (numbered || bullet) {
+      const type = numbered ? 'ol' : 'ul';
+
+      if (inList !== type) {
+        closeList();
+        out.push(type === 'ol' ? '<ol>' : '<ul>');
+        inList = type;
+      }
+
+      out.push('<li>' + (numbered ? numbered[1] : bullet[1]) + '</li>');
+      continue;
+    }
+
+    closeList();
+
+    let content = s
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    content = content.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+    );
+
+    content = content.replace(
+      /(^|[\s(])(https?:\/\/[^\s<]+)/g,
+      function (match, prefix, url) {
+        const cleanUrl = url.replace(/[.,!?;:)\]]+$/, '');
+        const extra = url.slice(cleanUrl.length);
+
+        return prefix +
+          '<a href="' + cleanUrl +
+          '" target="_blank" rel="noopener noreferrer">' +
+          cleanUrl + '</a>' + extra;
+      }
+    );
+
+    out.push('<p>' + content + '</p>');
+  }
+
+  closeList();
+  return out.join('');
+}
+function typeText(el, text) {
+  return new Promise(resolve => {
+    const b = el.querySelector('.bubble');
+    if (!b) {
+      resolve();
+      return;
+    }
+
+    let i = 0;
+    b.textContent = '';
+
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    b.append(cursor);
+
+    const step = () => {
+      if (i < text.length) {
+        cursor.before(document.createTextNode(
+          text.slice(i, i + Math.max(1, Math.min(3, text.length - i)))
+        ));
+
+        i = Math.min(text.length, i + 3);
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(step, 12);
+      } else {
+        cursor.remove();
+        b.innerHTML = renderMarkdown(text);
+        resolve();
+      }
+    };
+
+    step();
+  });
+}
  function taskProgressShow(){
   const box=document.getElementById('taskProgress');
   if(!box)return;
