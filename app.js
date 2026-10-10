@@ -794,3 +794,22 @@
 
     $('#new')?.addEventListener('click', () => {
       $$('.view').forEach(el => el.classList.add('hidden'));
+$('#agent')?.classList.remove('hidden');
+      $('#welcome')?.classList.remove('hidden');
+      setText('#crumb', 'New Task');
+      closeMenu();
+      $('#prompt')?.focus();
+    });
+  }
+
+  history();
+  usage();
+  initAuth();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init, { once: true });
+} else {
+  init();
+}
+})();
