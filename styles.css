@@ -141,6 +141,25 @@ main{margin-left:274px;height:100vh;min-width:0;background:var(--bg)}header{heig
 @media(prefers-color-scheme:dark){:root{--bg:#18181b;--panel:#202023;--panel-soft:#242428;--line:#303037;--line-strong:#3a3a42;--text:#f4f4f5;--muted:#a1a1aa;--subtle:#71717a;--p:#3b82f6;--p-soft:#172554;--p-border:#1d4ed8;--shadow:0 8px 30px rgba(0,0,0,.18);--shadow-lg:0 18px 55px rgba(0,0,0,.28)}html,body,main{background:var(--bg)}#side,header{background:rgba(24,24,27,.96)}header button,.composer,.bubble,.cards article,.settings>div,.empty,.box,.box input,.authgrid button,.model-selector,.prompt-chip{background:#202023;color:var(--text)}.brand b,.header-brand strong,.welcome h1,.title h2,.empty h3{color:var(--text)}.brand small,.welcome>p,.title p,.cards p,.history-item,.tool,.composer-brand,.row span{color:#a1a1aa}.welcome h1 span{color:#60a5fa}.new{background:#2563eb}.new:hover{background:#3b82f6}.starter-chips .prompt-chip:hover,.tool:hover,.history-item:hover,.authgrid button:hover{background:#27272a}.user .bubble{background:#172554;border-color:#1e3a8a}.ai:before{background:#172554;border-color:#1e3a8a;color:#60a5fa}.plan{background:#202023}.plan button,.google{background:#f4f4f5;color:#18181b}.legal button,footer button{color:#a1a1aa}.note,.chips-label,.agent-state{color:#71717a}.prompt-chip{border-color:#3f3f46}.prompt-chip:hover{background:#172554;color:#93c5fd;border-color:#1d4ed8}.composer:focus-within{border-color:#52525b}.settings select{background:#202023;color:#f4f4f5}.shade{background:rgba(0,0,0,.58)}}
 /* Taskya AI — Live Task Progress */
 .task-progress{
+TASKYA AI — ROOT styles.css — ANSWER UI v2
+============================================
+
+DEPLOY:
+GitHub: taskyaofficial-byte/taskya-frontend
+File: ROOT/styles.css
+Production: Vercel
+
+IMPORTANT:
+APPEND THIS COMPLETE BLOCK AT THE VERY END OF styles.css.
+Do not delete the existing CSS.
+
+
+/* =========================================================
+   TASKYA AI — MANUS-STYLE CLEAN ANSWER EXPERIENCE v2
+   ========================================================= */
+
+/* Full-width reading area */
+.chat{
   width:100%;
   max-width:950px;
   margin:0 auto 14px;
@@ -158,18 +177,28 @@ main{margin-left:274px;height:100vh;min-width:0;background:var(--bg)}header{heig
   color:#344054;
   margin-bottom:10px;
   letter-spacing:.2px;
+  max-width:1120px;
+  margin:0 auto;
+  padding:28px 34px 180px;
 }
 
 .task-progress-steps{
+/* Every message gets breathing room */
+.msg{
   display:flex;
   align-items:center;
   gap:8px;
   overflow-x:auto;
   scrollbar-width:none;
+  width:100%;
+  margin:24px 0;
 }
 
 .task-progress-steps::-webkit-scrollbar{
   display:none;
+/* User text also uses the page naturally */
+.msg.user{
+  justify-content:flex-start;
 }
 
 .task-step{
@@ -186,10 +215,32 @@ main{margin-left:274px;height:100vh;min-width:0;background:var(--bg)}header{heig
   font-weight:700;
   white-space:nowrap;
   transition:all .2s ease;
+/* REMOVE THE OLD CARD / SQUARE LOOK */
+.bubble{
+  width:100%;
+  max-width:none;
+  padding:0;
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  white-space:normal;
+  font-size:15.5px;
+  line-height:1.78;
+  color:var(--text);
 }
 
 .task-step span:first-child{
   font-size:14px;
+/* User question */
+.user .bubble{
+  background:transparent;
+  border:0;
+  box-shadow:none;
+  color:#344054;
+  font-weight:500;
+  max-width:100%;
 }
 
 .task-step.active{
@@ -197,36 +248,237 @@ main{margin-left:274px;height:100vh;min-width:0;background:var(--bg)}header{heig
   border-color:#93c5fd;
   color:#175cd3;
   box-shadow:0 0 0 3px rgba(37,99,235,.08);
+/* AI identity */
+.ai{
+  gap:12px;
+  align-items:flex-start;
 }
 
 .task-step.completed{
   background:#ecfdf3;
   border-color:#86efac;
   color:#027a48;
+.ai:before{
+  flex:0 0 30px;
+  width:30px;
+  height:30px;
+  margin-top:3px;
+}
+
+/* Main heading */
+.bubble h2{
+  margin:0 0 12px;
+  font-size:21px;
+  line-height:1.3;
+  font-weight:800;
+  letter-spacing:-.3px;
+  color:var(--text);
+}
+
+/* Section heading */
+.bubble h3{
+  margin:22px 0 9px;
+  font-size:17px;
+  line-height:1.4;
+  font-weight:800;
+  color:var(--text);
 }
 
 .task-step.active span:first-child{
   animation:taskPulse 1.2s ease-in-out infinite;
+/* Paragraphs */
+.bubble p{
+  margin:0 0 13px;
 }
 
 @keyframes taskPulse{
   0%,100%{transform:scale(1)}
   50%{transform:scale(1.18)}
+/* Numbered / bullet lists */
+.bubble ul,
+.bubble ol{
+  margin:7px 0 18px;
+  padding-left:28px;
 }
+
+.bubble li{
+  margin:8px 0;
+  padding-left:5px;
+  line-height:1.75;
+}
+
+/* Strong words */
+.bubble strong{
+  font-weight:800;
+  color:var(--text);
+}
+
+/* Small inline code */
+.bubble code{
+  padding:2px 6px;
+  border-radius:5px;
+  background:#f2f4f7;
+  font-size:.92em;
+}
+
+/* Tables */
+.answer-table-wrap{
+  width:100%;
+  overflow-x:auto;
+  margin:14px 0 20px;
+}
+
+.answer-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+  line-height:1.55;
+}
+
+.answer-table th,
+.answer-table td{
+  border:1px solid var(--line);
+  padding:9px 11px;
+  text-align:left;
+  vertical-align:top;
+}
+
+.answer-table th{
+  background:#f8fafc;
+  font-weight:800;
+}
+
+
+/* =========================================================
+   MOBILE — Manus-like comfortable reading
+   ========================================================= */
 
 @media(max-width:767px){
   .task-progress{
     margin:0 8px 10px;
     width:calc(100% - 16px);
     padding:12px;
+
+  .chat{
+    width:100%;
+    max-width:none;
+    padding:20px 16px 180px;
+  }
+
+  .msg{
+    margin:21px 0;
+  }
+
+  .bubble{
+    font-size:15.5px;
+    line-height:1.82;
+  }
+
+  .bubble h2{
+    font-size:19px;
+    margin-bottom:11px;
+  }
+
+  .bubble h3{
+    font-size:16.5px;
+    margin-top:21px;
+    margin-bottom:8px;
+  }
+
+  .bubble p{
+    margin-bottom:13px;
+  }
+
+  .bubble ul,
+  .bubble ol{
+    padding-left:24px;
+    margin-top:7px;
+    margin-bottom:17px;
+  }
+
+  .bubble li{
+    margin:8px 0;
+    padding-left:4px;
+    line-height:1.78;
+  }
+
+  .ai{
+    gap:9px;
+  }
+
+  .ai:before{
+    flex:0 0 27px;
+    width:27px;
+    height:27px;
+    margin-top:2px;
+  }
+
+  .answer-table{
+    min-width:520px;
+    font-size:13px;
+  }
+}
+
+
+/* =========================================================
+   TABLET / CHROME DESKTOP MODE
+   ========================================================= */
+
+@media(min-width:768px) and (max-width:1100px) and (pointer:coarse){
+
+  .chat{
+    width:100%;
+    max-width:none;
+    padding:24px 22px 180px;
   }
 
   .task-progress-steps{
     gap:6px;
+  .bubble{
+    font-size:15px;
+    line-height:1.78;
   }
 
   .task-step{
     font-size:10px;
     padding:6px 8px;
+  .bubble h2{
+    font-size:20px;
   }
+}
+
+
+/* =========================================================
+   DARK MODE — NO MESSAGE BOXES
+   ========================================================= */
+
+@media(prefers-color-scheme:dark){
+
+  .bubble,
+  .user .bubble{
+    background:transparent;
+    border:0;
+    box-shadow:none;
+  }
+
+  .bubble code{
+    background:#27272a;
+  }
+
+  .answer-table th{
+    background:#27272a;
+  }
+}
+
+
+/* =========================================================
+   FINAL OVERRIDE — prevent old card CSS from winning
+   ========================================================= */
+
+.msg .bubble{
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  background:transparent !important;
+  max-width:none !important;
 }
