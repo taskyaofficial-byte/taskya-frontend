@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://taskya.in/sitemap.xml
+Sitemap: https://www.taskya.in/sitemap.xml
