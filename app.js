@@ -214,16 +214,65 @@ function renderMarkdown(text) {
   const lines = safe.split(/\r?\n/);
   const out = [];
   let inList = '';
+  let tableRows = [];
 
-  const closeList = () => {
+  function inline(s) {
+    return s
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.+?)__/g, '<strong>$1</strong>')
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g, function(match, prefix, url) {
+        const clean = url.replace(/[.,!?;:)\]]+$/, '');
+        const extra = url.slice(clean.length);
+        return prefix + '<a href="' + clean +
+          '" target="_blank" rel="noopener noreferrer">' +
+          clean + '</a>' + extra;
+      });
+  }
+
+  function closeList() {
     if (inList) {
       out.push(inList === 'ol' ? '</ol>' : '</ul>');
       inList = '';
     }
-  };
+  }
+
+  function flushTable() {
+    if (!tableRows.length) return;
+
+    const rows = tableRows.filter(row =>
+      !/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(row)
+    );
+
+    if (rows.length) {
+      out.push('<div class="taskya-table-wrap"><table><tbody>');
+      rows.forEach((row, index) => {
+        const cells = row.trim().replace(/^\||\|$/g, '').split('|');
+        out.push('<tr>' + cells.map(cell =>
+          index === 0
+            ? '<th>' + inline(cell.trim()) + '</th>'
+            : '<td>' + inline(cell.trim()) + '</td>'
+        ).join('') + '</tr>');
+      });
+      out.push('</tbody></table></div>');
+    }
+
+    tableRows = [];
+  }
 
   for (const line of lines) {
     const s = line.trim();
+
+    if (s.includes('|') && s.split('|').length >= 3) {
+      closeList();
+      tableRows.push(s);
+      continue;
+    }
+
+    flushTable();
 
     if (!s) {
       closeList();
@@ -232,15 +281,14 @@ function renderMarkdown(text) {
 
     if (/^[-*_]{3,}$/.test(s)) {
       closeList();
-      out.push('<hr>');
       continue;
     }
 
-    const heading = s.match(/^(#{1,3})\s+(.+)$/);
+    const heading = s.match(/^#{1,3}\s+(.+)$/);
     if (heading) {
       closeList();
-      const level = heading[1].length;
-      out.push('<h' + level + '>' + heading[2] + '</h' + level + '>');
+      const level = s.match(/^#+/)[0].length;
+      out.push('<h' + level + '>' + inline(heading[1]) + '</h' + level + '>');
       continue;
     }
 
@@ -256,37 +304,15 @@ function renderMarkdown(text) {
         inList = type;
       }
 
-      out.push('<li>' + (numbered ? numbered[1] : bullet[1]) + '</li>');
+      out.push('<li>' + inline(numbered ? numbered[1] : bullet[1]) + '</li>');
       continue;
     }
 
     closeList();
-
-    let content = s
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    content = content.replace(
-      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
-    );
-
-    content = content.replace(
-      /(^|[\s(])(https?:\/\/[^\s<]+)/g,
-      function (match, prefix, url) {
-        const cleanUrl = url.replace(/[.,!?;:)\]]+$/, '');
-        const extra = url.slice(cleanUrl.length);
-
-        return prefix +
-          '<a href="' + cleanUrl +
-          '" target="_blank" rel="noopener noreferrer">' +
-          cleanUrl + '</a>' + extra;
-      }
-    );
-
-    out.push('<p>' + content + '</p>');
+    out.push('<p>' + inline(s) + '</p>');
   }
 
+  flushTable();
   closeList();
   return out.join('');
 }
