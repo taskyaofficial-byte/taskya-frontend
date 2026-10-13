@@ -620,7 +620,7 @@ function policy(t){
   ],  
   contact:[  
    'Contact Taskya',  
-   `Support email: <a href="mailto:${C.SUPPORT_EMAIL}">${C.SUPPORT_EMAIL}</a><br><br>Website: taskya.in`  
+   `Support email: <a href="mailto:${C.CONTACT?.EMAIL || 'info@taskya.in'}">${C.CONTACT?.EMAIL || 'info@taskya.in'}</a><br><br>Website: taskya.in`  
   ]  
  }[t]||[];  
   
